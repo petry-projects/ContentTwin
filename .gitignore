@@ -1,0 +1,23 @@
+# Everything ignored by default
+*
+
+# Explicitly include project files
+!.gitignore
+!.claude/
+!.claude/CLAUDE.md
+.claude/*
+!.claude/CLAUDE.md
+
+# BMad framework and output
+!_bmad/
+!_bmad/**
+!_bmad-output/
+!_bmad-output/**
+
+# Project docs
+!docs/
+!docs/**
+
+# Exclude cloned repos and node_modules
+bmad-method/
+node_modules/
