@@ -1,0 +1,3 @@
+repository:
+  # Automatically delete head branches after pull requests are merged
+  delete_branch_on_merge: true
