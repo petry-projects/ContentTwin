@@ -1,0 +1,25 @@
+name: Dependency Audit
+# Standard: https://github.com/petry-projects/.github/blob/main/standards/ci-standards.md#required-workflows
+
+permissions: {}
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@da9d6921af4b0dc56b3de77fa8a41ddb1daa0b98 # v4
+        with:
+          comment-summary-in-pr: always
+          fail-on-severity: high
