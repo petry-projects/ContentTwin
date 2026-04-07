@@ -19,7 +19,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v4
 
       - name: Dependency Review
-        uses: actions/dependency-review-action@da9d6921af4b0dc56b3de77fa8a41ddb1daa0b98 # v4
+        uses: actions/dependency-review-action@v4
         with:
           comment-summary-in-pr: always
           fail-on-severity: high
