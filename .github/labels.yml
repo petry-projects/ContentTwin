@@ -1,0 +1,12 @@
+# GitHub Labels — standard set
+# Reference: https://github.com/petry-projects/.github/blob/main/standards/github-settings.md#labels--standard-set
+#
+# To sync these labels to the repository, run:
+#   gh label create security --color "e11d48" --description "Security related issue" --repo petry-projects/ContentTwin
+#
+# Or use a label-sync tool with this file.
+
+labels:
+  - name: security
+    color: "e11d48"
+    description: "Security related issue"
