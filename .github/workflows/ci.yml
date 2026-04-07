@@ -1,0 +1,21 @@
+# CI — thin caller that delegates to the org-level reusable workflow.
+# All logic is maintained centrally in ci-reusable.yml.
+# Standard: https://github.com/petry-projects/.github/blob/main/standards/ci-standards.md#required-workflows
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions: {}
+
+jobs:
+  ci:
+    uses: petry-projects/.github/.github/workflows/ci-reusable.yml@main
+    secrets: inherit
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
