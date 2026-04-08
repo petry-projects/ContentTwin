@@ -42,4 +42,4 @@ jobs:
             -o /usr/local/bin/shfmt && chmod +x /usr/local/bin/shfmt
 
       - name: Check shell script formatting
-        run: shfmt -d scripts/*.sh
+        run: shfmt -i 2 -d scripts/*.sh
