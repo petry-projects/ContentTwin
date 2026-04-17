@@ -38,9 +38,12 @@ PAYLOAD='{
       "type": "required_status_checks",
       "parameters": {
         "required_status_checks": [
-          { "context": "SonarCloud" }
+          { "context": "SonarCloud" },
+          { "context": "CodeQL" },
+          { "context": "Lint" },
+          { "context": "Format" }
         ],
-        "strict_required_status_checks_policy": false,
+        "strict_required_status_checks_policy": true,
         "do_not_enforce_on_create": false
       }
     }
