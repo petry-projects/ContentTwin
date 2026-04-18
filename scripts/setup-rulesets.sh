@@ -45,9 +45,11 @@ PAYLOAD='{
       "parameters": {
         "required_status_checks": [
           { "context": "SonarCloud" },
-          { "context": "CodeQL" },
+          { "context": "Analyze (actions)" },
           { "context": "Lint" },
-          { "context": "Format" }
+          { "context": "Format" },
+          { "context": "agent-shield / AgentShield" },
+          { "context": "dependency-audit / Detect ecosystems" }
         ],
         "strict_required_status_checks_policy": true,
         "do_not_enforce_on_create": false
