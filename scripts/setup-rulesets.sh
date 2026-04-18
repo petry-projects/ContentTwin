@@ -14,9 +14,15 @@ REPO="${GITHUB_REPOSITORY:-petry-projects/ContentTwin}"
 echo "Applying rulesets for: $REPO"
 
 # ── code-quality ─────────────────────────────────────────────────────────────
-# Requires the SonarCloud quality gate to pass on the default branch before
-# any commit can be merged.  Mirrors the org standard:
+# Required status checks for the default branch before any commit can be merged.
+# Mirrors the org standard:
 #   standards/github-settings.md#code-quality--required-checks-ruleset-all-repositories
+#
+# NOTE: claude-code / claude is intentionally NOT included. claude-code-action's
+# GitHub App refuses to mint a token for PRs that touch workflow files, which
+# would deadlock every workflow-modifying PR. The Claude review check still runs
+# on all PRs for feedback, but must not be a merge gate.
+# See: petry-projects/.github scripts/apply-rulesets.sh
 
 RULESET_NAME="code-quality"
 
@@ -38,13 +44,17 @@ PAYLOAD='{
       "type": "required_status_checks",
       "parameters": {
         "required_status_checks": [
-          { "context": "SonarCloud" }
+          { "context": "SonarCloud" },
+          { "context": "CodeQL" },
+          { "context": "Lint" },
+          { "context": "Format" }
         ],
-        "strict_required_status_checks_policy": false,
+        "strict_required_status_checks_policy": true,
         "do_not_enforce_on_create": false
       }
     }
-  ]
+  ],
+  "bypass_actors": []
 }'
 
 if [ -n "$EXISTING_ID" ]; then
