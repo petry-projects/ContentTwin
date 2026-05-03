@@ -1,4 +1,4 @@
 # Code owners for ContentTwin
 # These owners will be automatically requested for review on pull requests.
 
-* @don-petry
+* @don-petry @petry-projects-pr-review-agent @dependabot-automerge-petry
