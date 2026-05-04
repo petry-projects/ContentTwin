@@ -1,4 +1,5 @@
-# Code owners for ContentTwin
-# These owners will be automatically requested for review on pull requests.
+# CODEOWNERS
+# Standard: use the @petry-projects/org-leads team for all code owner
+# assignments. See petry-projects/.github standards/codeowners-standard.md
 
-* @don-petry @petry-projects-pr-review-agent @dependabot-automerge-petry
+* @petry-projects/org-leads
