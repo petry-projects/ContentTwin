@@ -39,7 +39,7 @@ PAYLOAD='{
       "parameters": {
         "required_status_checks": [
           { "context": "SonarCloud" },
-          { "context": "Secret scan (gitleaks)" }
+          { "context": "CI / Secret scan (gitleaks)" }
         ],
         "strict_required_status_checks_policy": false,
         "do_not_enforce_on_create": false
