@@ -22,12 +22,24 @@ echo "Applying rulesets for: $REPO"
 # GitHub App refuses to mint a token for PRs that touch workflow files, which
 # would deadlock every workflow-modifying PR. The Claude review check still runs
 # on all PRs for feedback, but must not be a merge gate.
-# See: petry-projects/.github scripts/apply-rulesets.sh
+# See: petry-projects/.github:scripts/apply-rulesets.sh
 
 RULESET_NAME="code-quality"
 
 EXISTING_ID=$(gh api "repos/$REPO/rulesets" \
   --jq ".[] | select(.name == \"$RULESET_NAME\") | .id" 2>/dev/null || true)
+
+# Context strings must match exactly what GitHub reports for each check run.
+# To audit the current context names on any commit:
+#   gh api repos/$REPO/commits/$(git rev-parse HEAD)/check-runs --jq '[.check_runs[].name] | unique'
+#
+# Contexts used here:
+#   SonarCloud                       – SonarCloud quality gate
+#   Analyze (actions)                – CodeQL security analysis (github/codeql-action)
+#   Lint                             – ESLint / code style
+#   Format                           – Prettier / formatting
+#   agent-shield / AgentShield       – AgentShield AI security check
+#   dependency-audit / Detect ecosystems – Dependency vulnerability audit
 
 PAYLOAD='{
   "name": "code-quality",
