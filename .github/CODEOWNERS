@@ -1,5 +1,6 @@
-# CODEOWNERS
-# Standard: use the @petry-projects/org-leads team for all code owner
-# assignments. See petry-projects/.github standards/codeowners-standard.md
+# CODEOWNERS — petry-projects standard (codeowners-standard.md)
+#
+# Rule: @petry-projects/org-leads MUST be the FIRST owner on every line.
+# Additional teams may follow. Individual users are forbidden.
 
 * @petry-projects/org-leads
