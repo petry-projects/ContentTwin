@@ -38,14 +38,24 @@ PAYLOAD='{
       "type": "required_status_checks",
       "parameters": {
         "required_status_checks": [
-          { "context": "SonarCloud" }
+          { "context": "SonarCloud" },
+          { "context": "Analyze (actions)" },
+          { "context": "Lint" },
+          { "context": "Format" },
+          { "context": "agent-shield / AgentShield" },
+          { "context": "dependency-audit / Detect ecosystems" }
         ],
-        "strict_required_status_checks_policy": false,
+        "strict_required_status_checks_policy": true,
         "do_not_enforce_on_create": false
       }
     }
   ]
 }'
+# NOTE: "claude-code / claude" is intentionally excluded from required checks.
+# claude-code-action refuses to mint a token for PRs that touch workflow files,
+# which would deadlock every workflow-modifying PR. The check still runs for
+# review feedback on normal PRs but must not be a merge gate.
+# See: https://github.com/petry-projects/ContentTwin/issues/81
 
 if [ -n "$EXISTING_ID" ]; then
   echo "  Updating existing '$RULESET_NAME' ruleset (id: $EXISTING_ID)..."
