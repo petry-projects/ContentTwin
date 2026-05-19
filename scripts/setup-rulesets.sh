@@ -136,6 +136,11 @@ PR_QUALITY_PAYLOAD='{
     }
   ]
 }'
+# NOTE: "claude-code / claude" is intentionally excluded from required checks.
+# claude-code-action refuses to mint a token for PRs that touch workflow files,
+# which would deadlock every workflow-modifying PR. The check still runs for
+# review feedback on normal PRs but must not be a merge gate.
+# See: https://github.com/petry-projects/ContentTwin/issues/81
 
 if [[ -n "$PR_QUALITY_EXISTING_ID" ]]; then
   echo "  Updating existing '$PR_QUALITY_NAME' ruleset (id: $PR_QUALITY_EXISTING_ID)..."
