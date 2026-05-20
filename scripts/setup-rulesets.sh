@@ -14,14 +14,32 @@ REPO="${GITHUB_REPOSITORY:-petry-projects/ContentTwin}"
 echo "Applying rulesets for: $REPO"
 
 # ── code-quality ─────────────────────────────────────────────────────────────
-# Requires the SonarCloud quality gate to pass on the default branch before
-# any commit can be merged.  Mirrors the org standard:
+# Required status checks for the default branch before any commit can be merged.
+# Mirrors the org standard:
 #   standards/github-settings.md#code-quality--required-checks-ruleset-all-repositories
+#
+# NOTE: claude-code / claude is intentionally NOT included. claude-code-action's
+# GitHub App refuses to mint a token for PRs that touch workflow files, which
+# would deadlock every workflow-modifying PR. The Claude review check still runs
+# on all PRs for feedback, but must not be a merge gate.
+# See: petry-projects/.github:scripts/apply-rulesets.sh
 
 RULESET_NAME="code-quality"
 
 EXISTING_ID=$(gh api "repos/$REPO/rulesets" \
   --jq ".[] | select(.name == \"$RULESET_NAME\") | .id" 2>/dev/null || true)
+
+# Context strings must match exactly what GitHub reports for each check run.
+# To audit the current context names on any commit:
+#   gh api repos/$REPO/commits/$(git rev-parse HEAD)/check-runs --jq '[.check_runs[].name] | unique'
+#
+# Contexts used here:
+#   SonarCloud                       – SonarCloud quality gate
+#   Analyze (actions)                – CodeQL security analysis (github/codeql-action)
+#   Lint                             – ESLint / code style
+#   Format                           – Prettier / formatting
+#   agent-shield / AgentShield       – AgentShield AI security check
+#   dependency-audit / Detect ecosystems – Dependency vulnerability audit
 
 PAYLOAD='{
   "name": "code-quality",
@@ -49,7 +67,8 @@ PAYLOAD='{
         "do_not_enforce_on_create": false
       }
     }
-  ]
+  ],
+  "bypass_actors": []
 }'
 # NOTE: "claude-code / claude" is intentionally excluded from required checks.
 # claude-code-action refuses to mint a token for PRs that touch workflow files,
