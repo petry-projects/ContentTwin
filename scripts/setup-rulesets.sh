@@ -66,3 +66,15 @@ else
 fi
 
 echo "Done. Ruleset '$RULESET_NAME' is active."
+
+# ── dependabot security updates ──────────────────────────────────────────────
+# Enables Dependabot security updates so GitHub automatically opens PRs to
+# fix known vulnerabilities in dependencies.
+# Standard: https://github.com/petry-projects/.github/blob/main/standards/push-protection.md#required-repo-level-settings
+
+echo "Enabling Dependabot security updates for: $REPO"
+
+gh api "repos/$REPO" -X PATCH \
+  --field 'security_and_analysis[dependabot_security_updates][status]=enabled'
+
+echo "Done. Dependabot security updates enabled."
