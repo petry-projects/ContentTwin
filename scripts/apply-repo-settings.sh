@@ -24,6 +24,7 @@ gh api -X PATCH "repos/$REPO" --input - <<'JSON'
     "secret_scanning": {"status": "enabled"},
     "secret_scanning_push_protection": {"status": "enabled"},
     "secret_scanning_non_provider_patterns": {"status": "enabled"},
+    "secret_scanning_ai_detection": {"status": "enabled"},
     "dependabot_security_updates": {"status": "enabled"}
   }
 }
@@ -47,6 +48,7 @@ check_setting() {
 check_setting "secret_scanning"
 check_setting "secret_scanning_push_protection"
 check_setting "secret_scanning_non_provider_patterns"
+check_setting "secret_scanning_ai_detection"
 check_setting "dependabot_security_updates"
 
 echo "Done."
