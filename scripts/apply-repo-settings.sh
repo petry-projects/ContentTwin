@@ -51,4 +51,23 @@ check_setting "secret_scanning_non_provider_patterns"
 check_setting "secret_scanning_ai_detection"
 check_setting "dependabot_security_updates"
 
+# ── Disable Claude app check-suite auto-trigger ───────────────────────────────
+# The Claude GitHub App (id: 1236702) auto-trigger creates a queued check suite
+# on every push that is never completed, permanently blocking auto-merge.
+# Disabling it prevents GitHub from opening orphaned check suites for this app.
+# Standard: https://github.com/petry-projects/.github/blob/main/standards/github-settings.md
+
+echo "Disabling check-suite auto-trigger for Claude app (id: 1236702)..."
+
+gh api -X PATCH "repos/$REPO/check-suites/preferences" --input - <<'JSON'
+{
+  "auto_trigger_checks": [
+    {
+      "app_id": 1236702,
+      "setting": false
+    }
+  ]
+}
+JSON
+
 echo "Done."
