@@ -45,7 +45,7 @@ jobs:
   dependabot-rebase:
     permissions:
       pull-requests: write # call update-branch API on behind PRs and merge when ready
-    uses: petry-projects/.github/.github/workflows/dependabot-rebase-reusable.yml@e4c147578983329ba7966ddb7b70636fac77a203 # v1
+    uses: petry-projects/.github/.github/workflows/dependabot-rebase-reusable.yml@3f861e1d05f3486fef7548fd7ae8967e006b6726 # v1
     secrets:
       APP_ID: ${{ secrets.APP_ID }}
       APP_PRIVATE_KEY: ${{ secrets.APP_PRIVATE_KEY }}
