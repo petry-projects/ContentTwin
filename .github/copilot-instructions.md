@@ -4,7 +4,7 @@
 
 ## About
 
-ContentTwin is a repository security and analysis settings automation tool — a collection of shell scripts that apply required GitHub repository configurations (secret scanning, push protection, code scanning, rulesets) across the petry-projects org.
+ContentTwin is a repository security and analysis settings automation tool — a collection of shell scripts that apply required GitHub repository configurations (secret scanning, push protection, rulesets) across the petry-projects org.
 
 ## Tech Stack
 
@@ -27,7 +27,6 @@ scripts/
     apply-secret-scanning-ai-detection.sh
   workflows/
     ci.yml                        # Runs ShellCheck + shfmt on every PR
-    codeql.yml                    # CodeQL SAST scan
     ...
 ```
 

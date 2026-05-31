@@ -1,6 +1,6 @@
 ---
 description: Shell script development standards for the Petry Projects organization
-applyTo: "**/*.sh,**/*.bash"
+applyTo: "**/*.sh,**/*.bash,**/Makefile,**/*.mk"
 ---
 
 # Shell Script Development Standards
@@ -85,7 +85,7 @@ Run ShellCheck before committing. Common issues to fix proactively:
 
   ```bash
   # Wrong — subject to word splitting:
-  run_command "$user_args"
+  run_command $user_args
 
   # Right — use an array:
   args=("--flag" "$user_value")
