@@ -30,7 +30,7 @@ on:
   # to catch CI turning green on a PR.
   # TODO: replace "CI" with your repository's CI workflow name(s).
   workflow_run:
-    workflows: ["CI"]
+    workflows: ["CI", "AgentShield", "Dependency audit"]
     types: [completed]
   # check_suite covers third-party CI checks (e.g. SonarCloud, external apps).
   check_suite:
@@ -38,6 +38,9 @@ on:
   # Re-evaluate readiness after review state changes.
   pull_request_review:
     types: [submitted, dismissed]
+  # Re-evaluate when a review thread is resolved so the gate can unblock.
+  pull_request_review_thread:
+    types: [resolved]
   # Re-evaluate when the PR is first opened, updated, or comes out of draft.
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
@@ -46,6 +49,13 @@ permissions: {}
 
 jobs:
   pr-auto-review:
+    # Skip fork and Dependabot pull_request runs: secrets are unavailable there
+    # and the reusable's gh API calls cannot authenticate. Those PRs are still
+    # covered by the workflow_run path once CI (and other required checks) complete.
+    if: >-
+      github.event_name != 'pull_request' ||
+      (github.event.pull_request.head.repo.fork == false &&
+       github.actor != 'dependabot[bot]')
     permissions:
       pull-requests: read
       checks: read
