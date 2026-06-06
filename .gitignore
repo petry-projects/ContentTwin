@@ -1,6 +1,4 @@
 .dev-lead/
-.dev-lead/
-.dev-lead/
-.dev-lead/
-.dev-lead/
-.dev-lead/
+.env
+*.pem
+*.key
