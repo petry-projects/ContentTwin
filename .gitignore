@@ -1,4 +1,4 @@
 .dev-lead/
-.env
+.env*
 *.pem
 *.key
