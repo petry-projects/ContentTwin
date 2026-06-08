@@ -56,10 +56,18 @@ check_setting "dependabot_security_updates"
 # on every push that is never completed, permanently blocking auto-merge.
 # Disabling it prevents GitHub from opening orphaned check suites for this app.
 # Standard: https://github.com/petry-projects/.github/blob/main/standards/github-settings.md
+#
+# NOTE: GitHub only accepts a classic PAT, basic auth, or GitHub App token for
+# this endpoint — OAuth app tokens are rejected with 403.  Set GH_PAT to a
+# classic PAT with repo scope to apply this step; on failure the script warns
+# and exits 0 so security_and_analysis settings above are not rolled back.
 
 echo "Disabling check-suite auto-trigger for Claude app (id: 1236702)..."
 
-gh api -X PATCH "repos/$REPO/check-suites/preferences" --input - <<'JSON'
+# Prefer GH_PAT (classic PAT) for this step; fall back to GH_TOKEN.
+_cs_token="${GH_PAT:-${GH_TOKEN:-}}"
+if GH_TOKEN="$_cs_token" gh api -X PATCH "repos/$REPO/check-suites/preferences" \
+   --input - >/dev/null 2>&1 <<'JSON'
 {
   "auto_trigger_checks": [
     {
@@ -69,5 +77,11 @@ gh api -X PATCH "repos/$REPO/check-suites/preferences" --input - <<'JSON'
   ]
 }
 JSON
+then
+  echo "  [OK] check-suite auto-trigger disabled for Claude app (1236702)"
+else
+  echo "  [WARN] check-suite preferences require a classic PAT or GitHub App token."
+  echo "         Re-run with: GH_PAT=<classic-pat> bash scripts/apply-repo-settings.sh"
+fi
 
 echo "Done."
