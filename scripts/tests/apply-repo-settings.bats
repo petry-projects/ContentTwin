@@ -23,11 +23,18 @@ echo "$*" >> "$CALLS_FILE"
 
 # Capture JSON body for PATCH requests that read from stdin (--input -)
 if [[ " $* " == *" --input - "* ]]; then
-  # Derive a safe filename from the URL argument (first non-flag arg after "api")
-  url_slug=$(printf '%s' "$*" | tr -cs 'a-zA-Z0-9_-' '_' | head -c 60)
+  # Derive a safe filename from the URL argument (first repos/* path in argv)
+  url_arg=""
+  for arg in "$@"; do
+    if [[ "$arg" == repos/* ]]; then
+      url_arg="$arg"
+      break
+    fi
+  done
+  url_slug=$(printf '%s' "$url_arg" | tr -cs 'a-zA-Z0-9_-' '_' | head -c 60)
   cat > "$PAYLOAD_DIR/${url_slug}.json"
   echo '{}'
-elif [[ " $* " == *"--jq '.security_and_analysis'"* ]]; then
+elif [[ " $* " == *"--jq .security_and_analysis"* ]]; then
   printf '{"secret_scanning":{"status":"enabled"},"secret_scanning_push_protection":{"status":"enabled"},"secret_scanning_non_provider_patterns":{"status":"enabled"},"secret_scanning_ai_detection":{"status":"enabled"},"dependabot_security_updates":{"status":"enabled"}}'
 else
   echo '{}'
