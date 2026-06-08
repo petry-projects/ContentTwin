@@ -60,7 +60,7 @@ check_setting "dependabot_security_updates"
 # NOTE: GitHub only accepts a classic PAT, basic auth, or GitHub App token for
 # this endpoint — OAuth app tokens are rejected with 403.  Set GH_PAT to a
 # classic PAT with repo scope to apply this step; on failure the script warns
-# and exits 0 so security_and_analysis settings above are not rolled back.
+# and exits 1.
 
 echo "Disabling check-suite auto-trigger for Claude app (id: 1236702)..."
 
@@ -84,6 +84,7 @@ JSON
 else
   echo "  [WARN] check-suite preferences require a classic PAT or GitHub App token."
   echo "         Re-run with: GH_PAT=<classic-pat> bash scripts/apply-repo-settings.sh"
+  exit 1
 fi
 
 echo "Done."
