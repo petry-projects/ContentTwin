@@ -66,8 +66,11 @@ echo "Disabling check-suite auto-trigger for Claude app (id: 1236702)..."
 
 # Prefer GH_PAT (classic PAT) for this step; fall back to GH_TOKEN.
 _cs_token="${GH_PAT:-${GH_TOKEN:-}}"
-if GH_TOKEN="$_cs_token" gh api -X PATCH "repos/$REPO/check-suites/preferences" \
-   --input - >/dev/null 2>&1 <<'JSON'
+if [ -n "$_cs_token" ]; then
+  export GH_TOKEN="$_cs_token"
+fi
+if gh api -X PATCH "repos/$REPO/check-suites/preferences" \
+  --input - >/dev/null 2>&1 <<'JSON'; then
 {
   "auto_trigger_checks": [
     {
@@ -77,7 +80,6 @@ if GH_TOKEN="$_cs_token" gh api -X PATCH "repos/$REPO/check-suites/preferences" 
   ]
 }
 JSON
-then
   echo "  [OK] check-suite auto-trigger disabled for Claude app (1236702)"
 else
   echo "  [WARN] check-suite preferences require a classic PAT or GitHub App token."
