@@ -10,7 +10,9 @@ setup() {
   mkdir -p "$MOCK_BIN"
 
   CALLS_FILE="$BATS_TMPDIR/calls"
+  rm -f "$CALLS_FILE"
   PAYLOAD_DIR="$BATS_TMPDIR/payloads"
+  rm -rf "$PAYLOAD_DIR"
   mkdir -p "$PAYLOAD_DIR"
   export CALLS_FILE PAYLOAD_DIR
 
