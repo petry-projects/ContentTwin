@@ -70,4 +70,32 @@ gh api -X PATCH "repos/$REPO/check-suites/preferences" --input - <<'JSON'
 }
 JSON
 
+# ── Loosen first-time contributor approval policy ─────────────────────────────
+# The default `first_time_contributors` policy sends every workflow run
+# triggered by the Copilot Pull Request Reviewer's `pull_request_review`
+# events to `action_required` purgatory, because the Copilot bot is treated
+# as a first-time contributor on each PR. fleet_monitor.sh counts
+# `action_required` as a failure, which pushed `pr-auto-review.yml` above the
+# 10% warning threshold (issue #216). Narrowing the policy to
+# `first_time_contributors_new_to_github` only gates accounts that have
+# never contributed to anything on GitHub — established bots and external
+# reviewers are no longer affected, while genuine drive-by contributors
+# from public forks still require approval.
+
+echo "Setting fork-PR contributor approval policy..."
+
+gh api -X PUT "repos/$REPO/actions/permissions/fork-pr-contributor-approval" --input - <<'JSON'
+{
+  "approval_policy": "first_time_contributors_new_to_github"
+}
+JSON
+
+POLICY=$(gh api "repos/$REPO/actions/permissions/fork-pr-contributor-approval" \
+  --jq '.approval_policy' 2>/dev/null || echo "unknown")
+if [ "$POLICY" = "first_time_contributors_new_to_github" ]; then
+  echo "  [OK] approval_policy: $POLICY"
+else
+  echo "  [WARN] approval_policy: $POLICY (expected: first_time_contributors_new_to_github)"
+fi
+
 echo "Done."
