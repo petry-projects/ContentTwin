@@ -64,6 +64,8 @@ check_setting "dependabot_security_updates"
 #
 # NOTE: This endpoint requires a GitHub App token or a fine-grained PAT with
 # Checks: write permission — classic PATs and OAuth app tokens are rejected.
+# Because the repo PATCH above also runs when GH_PAT is set, a re-run via
+# GH_PAT requires Administration: write as well as Checks: write.
 # Set GH_PAT to a supported token; on failure the script warns and exits 1.
 
 echo "Disabling check-suite auto-trigger for Claude app (id: 1236702)..."
@@ -81,7 +83,7 @@ if gh api -X PATCH "repos/$REPO/check-suites/preferences" \
 JSON
   echo "  [OK] check-suite auto-trigger disabled for Claude app (1236702)"
 else
-  echo "  [WARN] check-suite preferences require a fine-grained PAT (Checks: write) or GitHub App token."
+  echo "  [WARN] check-suite preferences require a fine-grained PAT (Administration: write + Checks: write) or GitHub App token."
   echo "         Re-run with: GH_PAT=<fine-grained-pat> bash scripts/apply-repo-settings.sh"
   exit 1
 fi
