@@ -82,20 +82,26 @@ JSON
 # reviewers are no longer affected, while genuine drive-by contributors
 # from public forks still require approval.
 
+readonly EXPECTED_APPROVAL_POLICY="first_time_contributors_new_to_github"
+
 echo "Setting fork-PR contributor approval policy..."
 
-gh api -X PUT "repos/$REPO/actions/permissions/fork-pr-contributor-approval" --input - <<'JSON'
+gh api -X PUT "repos/$REPO/actions/permissions/fork-pr-contributor-approval" --input - <<JSON
 {
-  "approval_policy": "first_time_contributors_new_to_github"
+  "approval_policy": "${EXPECTED_APPROVAL_POLICY}"
 }
 JSON
 
-POLICY=$(gh api "repos/$REPO/actions/permissions/fork-pr-contributor-approval" \
-  --jq '.approval_policy' 2>/dev/null || echo "unknown")
-if [ "$POLICY" = "first_time_contributors_new_to_github" ]; then
+POLICY="$(gh api "repos/$REPO/actions/permissions/fork-pr-contributor-approval" \
+  --jq '.approval_policy')" || {
+  echo "Failed to read fork-PR contributor approval policy" >&2
+  exit 1
+}
+if [[ "$POLICY" == "$EXPECTED_APPROVAL_POLICY" ]]; then
   echo "  [OK] approval_policy: $POLICY"
 else
-  echo "  [WARN] approval_policy: $POLICY (expected: first_time_contributors_new_to_github)"
+  echo "  [ERROR] approval_policy: $POLICY (expected: $EXPECTED_APPROVAL_POLICY)" >&2
+  exit 1
 fi
 
 echo "Done."
