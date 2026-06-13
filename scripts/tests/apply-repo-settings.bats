@@ -34,7 +34,7 @@ if [[ " $* " == *" --input - "* ]]; then
   url_slug=$(printf '%s' "$url_arg" | tr -cs 'a-zA-Z0-9_-' '_' | head -c 60)
   cat > "$PAYLOAD_DIR/${url_slug}.json"
   echo '{}'
-elif [[ " $* " == *"--jq .security_and_analysis"* ]]; then
+elif [[ "$*" == *--jq* && "$*" == *security_and_analysis* ]]; then
   printf '{"secret_scanning":{"status":"enabled"},"secret_scanning_push_protection":{"status":"enabled"},"secret_scanning_non_provider_patterns":{"status":"enabled"},"secret_scanning_ai_detection":{"status":"enabled"},"dependabot_security_updates":{"status":"enabled"}}'
 else
   echo '{}'

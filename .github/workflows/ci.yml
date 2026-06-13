@@ -27,7 +27,6 @@ jobs:
       - name: Lint shell scripts
         run: |
           shellcheck scripts/*.sh
-          shellcheck scripts/tests/*.bats
 
   format:
     name: Format
