@@ -11,6 +11,11 @@ set -euo pipefail
 
 REPO="${GITHUB_REPOSITORY:-petry-projects/ContentTwin}"
 
+# Honour GH_PAT early so every gh api call in this script uses it.
+if [ -n "${GH_PAT:-}" ]; then
+  export GH_TOKEN="$GH_PAT"
+fi
+
 echo "Applying security and analysis settings for: $REPO"
 
 # ── Required security_and_analysis settings ───────────────────────────────────
@@ -67,10 +72,17 @@ check_setting "dependabot_security_updates"
 # on every push that is never completed, permanently blocking auto-merge.
 # Disabling it prevents GitHub from opening orphaned check suites for this app.
 # Standard: https://github.com/petry-projects/.github/blob/main/standards/github-settings.md
+#
+# NOTE: This endpoint requires a GitHub App token or a fine-grained PAT with
+# Checks: write permission — classic PATs and OAuth app tokens are rejected.
+# Because the repo PATCH above also runs when GH_PAT is set, a re-run via
+# GH_PAT requires Administration: write as well as Checks: write.
+# Set GH_PAT to a supported token; on failure the script warns and exits 1.
 
 echo "Disabling check-suite auto-trigger for Claude app (id: 1236702)..."
 
-gh api -X PATCH "repos/$REPO/check-suites/preferences" --input - <<'JSON'
+if gh api -X PATCH "repos/$REPO/check-suites/preferences" \
+  --input - >/dev/null 2>&1 <<'JSON'; then
 {
   "auto_trigger_checks": [
     {
@@ -80,6 +92,12 @@ gh api -X PATCH "repos/$REPO/check-suites/preferences" --input - <<'JSON'
   ]
 }
 JSON
+  echo "  [OK] check-suite auto-trigger disabled for Claude app (1236702)"
+else
+  echo "  [WARN] check-suite preferences require a fine-grained PAT (Administration: write + Checks: write) or GitHub App token."
+  echo "         Re-run with: GH_PAT=<fine-grained-pat> bash scripts/apply-repo-settings.sh"
+  exit 1
+fi
 
 # ── Loosen first-time contributor approval policy ─────────────────────────────
 # The default `first_time_contributors` policy sends every workflow run
