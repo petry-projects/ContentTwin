@@ -25,7 +25,8 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Lint shell scripts
-        run: shellcheck scripts/*.sh
+        run: |
+          shellcheck scripts/*.sh
 
   format:
     name: Format
@@ -43,6 +44,23 @@ jobs:
 
       - name: Check shell script formatting
         run: shfmt -i 2 -d scripts/*.sh
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Install bats
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bats
+
+      - name: Run bats tests
+        run: bats scripts/tests/
 
   secret-scan:
     name: Secret scan (gitleaks)
