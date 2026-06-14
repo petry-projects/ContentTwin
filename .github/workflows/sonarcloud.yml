@@ -7,6 +7,14 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+
+# Collapse superseded runs on the same ref. Rapid automated pushes to a PR branch
+# would otherwise each spawn a SonarCloud run; the older ones get held pending
+# approval (action_required) and inflate the Fleet Monitor failure rate (#263).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   sonarcloud:
     name: SonarCloud
