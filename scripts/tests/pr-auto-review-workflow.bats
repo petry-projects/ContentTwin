@@ -66,7 +66,8 @@ import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1]))
 job = wf['jobs']['pr-auto-review']
 uses = job.get('uses', '')
-assert 'pr-auto-review-reusable.yml' in uses, f'job must call the org reusable, got: {uses!r}'
+expected = 'petry-projects/.github/.github/workflows/pr-auto-review-reusable.yml@'
+assert uses.startswith(expected), f'job must call the org reusable workflow, got: {uses!r}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
