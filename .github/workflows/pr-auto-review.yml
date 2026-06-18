@@ -43,6 +43,14 @@ on:
 
 permissions: {}
 
+# Collapse superseded runs on the same ref. Rapid automated PR pushes (e.g. from
+# the dev-lead bot) would otherwise each spawn a readiness-check run; the older
+# ones get held pending approval (action_required) and inflate the Fleet Monitor
+# failure rate (#274). Mirrors the fix applied to sonarcloud.yml in #263.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pr-auto-review:
     permissions:
