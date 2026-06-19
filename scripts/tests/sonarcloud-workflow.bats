@@ -114,3 +114,57 @@ print('ok')
   [ "$status" -eq 0 ]
   [[ "$output" == "ok" ]]
 }
+
+# Duration-bounding (issue #280): the Fleet Monitor counts a `timed_out` conclusion
+# as a failure (fleet_monitor.sh). The #272 retry only recovers from a scan step
+# that *errors*; a scan that *hangs* (CDN download or analysis upload stalls) has no
+# step timeout, so it blocks the whole job until GitHub's 6-hour default and concludes
+# `timed_out`. Bounding both the job and each scan step lets a hung first attempt fail
+# fast so the retry can still run, instead of timing out the whole job.
+
+@test "sonarcloud job declares a timeout-minutes within the org cap" {
+  run python3 -c "
+import sys, yaml
+with open(sys.argv[1], encoding='utf-8') as f:
+  wf = yaml.safe_load(f)
+job = wf['jobs']['sonarcloud']
+tm = job.get('timeout-minutes')
+assert isinstance(tm, int), f'sonarcloud job must set an integer timeout-minutes, got: {tm!r}'
+assert 1 <= tm <= 59, f'job timeout-minutes must be within the org cap 1..59, got: {tm}'
+print('ok')
+" "$WORKFLOW"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
+@test "sonarcloud both scan steps declare a timeout-minutes" {
+  run python3 -c "
+import sys, yaml
+with open(sys.argv[1], encoding='utf-8') as f:
+  wf = yaml.safe_load(f)
+steps = wf['jobs']['sonarcloud']['steps']
+scans = [s for s in steps if 'SonarSource/sonarqube-scan-action' in str(s.get('uses', ''))]
+for i, s in enumerate(scans):
+  tm = s.get('timeout-minutes')
+  assert isinstance(tm, int) and tm >= 1, f'scan step {i} must set an integer timeout-minutes >= 1, got: {tm!r}'
+print('ok')
+" "$WORKFLOW"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
+@test "sonarcloud first scan timeout leaves room for the retry within the job budget" {
+  run python3 -c "
+import sys, yaml
+with open(sys.argv[1], encoding='utf-8') as f:
+  wf = yaml.safe_load(f)
+job = wf['jobs']['sonarcloud']
+job_tm = job['timeout-minutes']
+scans = [s for s in job['steps'] if 'SonarSource/sonarqube-scan-action' in str(s.get('uses', ''))]
+first_tm = scans[0]['timeout-minutes']
+assert first_tm < job_tm, f'first scan timeout ({first_tm}) must be < job timeout ({job_tm}) so a hung first attempt fails fast and the retry can run'
+print('ok')
+" "$WORKFLOW"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
