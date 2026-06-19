@@ -23,16 +23,18 @@ echo "Applying security and analysis settings for: $REPO"
 # have these features enabled.  The compliance audit checks these flags via
 # GET /repos/{owner}/{repo} and reports failures as GitHub Issues.
 #
-# NOTE: `secret_scanning_ai_detection` is a GitHub Advanced Security (GHAS)
-# gated feature.  When the org has
+# NOTE: `secret_scanning_ai_detection` and `secret_scanning_non_provider_patterns`
+# are both GitHub Advanced Security (GHAS) gated features.  When the org has
 # `advanced_security_enabled_for_new_repositories=false`, the PATCH above
 # succeeds with HTTP 200, but the follow-up verification GET
 # (`gh api "repos/$REPO"`, see "Verifying applied settings…" below) silently
-# omits this key from the `security_and_analysis` object — `check_setting`
-# will therefore report `unknown` for it, and the compliance audit reads the
-# same omitted state as `null`.  The corresponding finding cannot clear from
+# omits these keys from the `security_and_analysis` object — `check_setting`
+# will therefore report `unknown` for them, and the compliance audit reads the
+# same omitted state as `null`.  The corresponding findings cannot clear from
 # this script alone; an org admin must enable GHAS at the org level before
-# this setting can take effect.  See: https://github.com/petry-projects/ContentTwin/issues/203
+# these settings can take effect.
+# See: https://github.com/petry-projects/ContentTwin/issues/203 (secret_scanning_ai_detection)
+#      https://github.com/petry-projects/ContentTwin/issues/287 (secret_scanning_non_provider_patterns)
 
 gh api -X PATCH "repos/$REPO" --input - <<'JSON'
 {
