@@ -144,6 +144,7 @@ with open(sys.argv[1], encoding='utf-8') as f:
   wf = yaml.safe_load(f)
 steps = wf['jobs']['sonarcloud'].get('steps', [])
 scans = [s for s in steps if 'SonarSource/sonarqube-scan-action' in str(s.get('uses', ''))]
+assert len(scans) == 2, f'expected exactly 2 Sonar scan steps, got: {len(scans)}'
 for i, s in enumerate(scans):
   tm = s.get('timeout-minutes')
   assert isinstance(tm, int) and tm >= 1, f'scan step {i} must set an integer timeout-minutes >= 1, got: {tm!r}'
