@@ -142,7 +142,7 @@ print('ok')
 import sys, yaml
 with open(sys.argv[1], encoding='utf-8') as f:
   wf = yaml.safe_load(f)
-steps = wf['jobs']['sonarcloud']['steps']
+steps = wf['jobs']['sonarcloud'].get('steps', [])
 scans = [s for s in steps if 'SonarSource/sonarqube-scan-action' in str(s.get('uses', ''))]
 for i, s in enumerate(scans):
   tm = s.get('timeout-minutes')
@@ -159,9 +159,10 @@ import sys, yaml
 with open(sys.argv[1], encoding='utf-8') as f:
   wf = yaml.safe_load(f)
 job = wf['jobs']['sonarcloud']
-job_tm = job['timeout-minutes']
-scans = [s for s in job['steps'] if 'SonarSource/sonarqube-scan-action' in str(s.get('uses', ''))]
-first_tm = scans[0]['timeout-minutes']
+job_tm = job.get('timeout-minutes')
+scans = [s for s in job.get('steps', []) if 'SonarSource/sonarqube-scan-action' in str(s.get('uses', ''))]
+first_tm = scans[0].get('timeout-minutes') if scans else None
+assert isinstance(job_tm, int) and isinstance(first_tm, int), 'timeouts must be integers'
 assert first_tm < job_tm, f'first scan timeout ({first_tm}) must be < job timeout ({job_tm}) so a hung first attempt fails fast and the retry can run'
 print('ok')
 " "$WORKFLOW"
