@@ -73,15 +73,13 @@ import json, sys
 try:
     with open(sys.argv[1]) as f:
         d = json.load(f)
-except (ValueError, OSError):
+    checks = d.get("preferences", {}).get("auto_trigger_checks")
+    if not isinstance(checks, list):
+        raise ValueError
+    by_app = {c.get("app_id"): c.get("setting") for c in checks if isinstance(c, dict)}
+    print(str(by_app.get(1236702, "missing")).lower())
+except Exception:
     print("unreadable")
-    sys.exit(0)
-checks = d.get("preferences", {}).get("auto_trigger_checks")
-if not isinstance(checks, list):
-    print("unreadable")
-    sys.exit(0)
-by_app = {c.get("app_id"): c.get("setting") for c in checks}
-print(str(by_app.get(1236702, "missing")).lower())
 PY
   )
   if [ "$setting" = "false" ]; then
