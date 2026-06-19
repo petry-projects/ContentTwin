@@ -63,6 +63,34 @@ check_setting() {
   fi
 }
 
+# Read back the check-suite preferences PATCH response and confirm the Claude
+# app auto-trigger setting is present and disabled. Reports readability so a
+# `check-suite-prefs-unreadable` finding can be cleared with confidence.
+verify_check_suite_pref() {
+  local file="$1"
+  local setting
+  setting=$(
+    python3 - "$file" <<'PY' 2>/dev/null || true
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        d = json.load(f)
+    checks = d.get("preferences", {}).get("auto_trigger_checks")
+    if not isinstance(checks, list):
+        raise ValueError
+    by_app = {c.get("app_id"): c.get("setting") for c in checks if isinstance(c, dict)}
+    print(str(by_app.get(1236702, "missing")).lower())
+except Exception:
+    print("unreadable")
+PY
+  )
+  if [ "$setting" = "false" ]; then
+    echo "  [OK] check-suite preferences readable; auto-trigger for app 1236702 is disabled"
+  else
+    echo "  [WARN] check-suite preferences could not be read back (got: ${setting:-unreadable})"
+  fi
+}
+
 check_setting "secret_scanning"
 check_setting "secret_scanning_push_protection"
 check_setting "secret_scanning_non_provider_patterns"
@@ -83,8 +111,15 @@ check_setting "dependabot_security_updates"
 
 echo "Disabling check-suite auto-trigger for Claude app (id: 1236702)..."
 
+# The PATCH response echoes the resulting preferences object. Capture it so we
+# can read back and confirm the auto-trigger setting was applied — this is the
+# same state the compliance audit reports as `check-suite-prefs-unreadable`
+# when its token cannot read the preferences.
+CS_RESPONSE_FILE="$(mktemp)"
+trap 'rm -f "$CS_RESPONSE_FILE"' EXIT
+
 if gh api -X PATCH "repos/$REPO/check-suites/preferences" \
-  --input - >/dev/null 2>&1 <<'JSON'; then
+  --input - >"$CS_RESPONSE_FILE" 2>/dev/null <<'JSON'; then
 {
   "auto_trigger_checks": [
     {
@@ -95,6 +130,7 @@ if gh api -X PATCH "repos/$REPO/check-suites/preferences" \
 }
 JSON
   echo "  [OK] check-suite auto-trigger disabled for Claude app (1236702)"
+  verify_check_suite_pref "$CS_RESPONSE_FILE"
 else
   echo "  [WARN] check-suite preferences require a fine-grained PAT (Administration: write + Checks: write) or GitHub App token."
   echo "         Re-run with: GH_PAT=<fine-grained-pat> bash scripts/apply-repo-settings.sh"
