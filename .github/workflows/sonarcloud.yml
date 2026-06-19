@@ -17,6 +17,13 @@ jobs:
   sonarcloud:
     name: SonarCloud
     runs-on: ubuntu-latest
+    # Backstop the whole job. A normal scan finishes in well under a minute, so a job
+    # running this long means something is wedged (e.g. a stalled checkout). Without a
+    # bound the default is 6 hours, which the Fleet Monitor records as a timed_out
+    # failure (fleet_monitor.sh). Set above the two 5-minute scan-step budgets so the
+    # per-step timeouts normally win and this stays a true backstop; under the org cap
+    # of 59 (ci-standards.md).
+    timeout-minutes: 12
     permissions:
       contents: read
       pull-requests: read
@@ -35,6 +42,11 @@ jobs:
         if: ${{ env.SONAR_TOKEN != '' }}
         uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
         continue-on-error: true
+        # Bound the first attempt so a hung CDN download or analysis upload fails fast
+        # (continue-on-error keeps the job alive) and the retry below can recover —
+        # rather than the hang blocking the job until the timeout-minutes backstop.
+        timeout-minutes: 5
       - name: SonarCloud Scan (retry)
         if: ${{ env.SONAR_TOKEN != '' && steps.sonar.outcome == 'failure' }}
         uses: SonarSource/sonarqube-scan-action@713881670b6b3676cda39549040e2d88c70d582e # v8.2.0
+        timeout-minutes: 5
