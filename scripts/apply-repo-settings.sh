@@ -120,6 +120,13 @@ echo "Disabling check-suite auto-triggers for Claude (id: 1236702) and CodeRabbi
 CS_RESPONSE_FILE="$(mktemp)"
 trap 'rm -f "$CS_RESPONSE_FILE"' EXIT
 
+# The PATCH response echoes the resulting preferences object. Capture it so we
+# can read back and confirm the auto-trigger setting was applied — this is the
+# same state the compliance audit reports as `check-suite-prefs-unreadable`
+# when its token cannot read the preferences.
+CS_RESPONSE_FILE="$(mktemp)"
+trap 'rm -f "$CS_RESPONSE_FILE"' EXIT
+
 if gh api -X PATCH "repos/$REPO/check-suites/preferences" \
   --input - >"$CS_RESPONSE_FILE" 2>/dev/null <<'JSON'; then
 {
