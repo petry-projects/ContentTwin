@@ -44,7 +44,7 @@ PY
 @test "uses: reusable pinned line is unchanged" {
   run query "job['uses']"
   [ "$status" -eq 0 ]
-  [ "$output" = "petry-projects/.github/.github/workflows/dependency-audit-reusable.yml@v1" ]
+  [ "$output" = "petry-projects/.github/.github/workflows/dependency-audit-reusable.yml@376a4fcb1117444595e3e702fa450873d0e54310" ]
 }
 
 @test "job name 'dependency-audit' is unchanged" {
