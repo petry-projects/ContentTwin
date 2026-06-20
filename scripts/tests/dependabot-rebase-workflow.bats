@@ -9,7 +9,7 @@
 # `stable` channel) that pin must be the reusable's moving `@dependabot-rebase/stable`
 # channel tag — never a frozen `@vX.Y.Z`, never a SHA.
 
-WORKFLOW=".github/workflows/dependabot-rebase.yml"
+WORKFLOW="$BATS_TEST_DIRNAME/../../.github/workflows/dependabot-rebase.yml"
 
 # Emit a single field from the workflow via PyYAML. PyYAML parses the bare
 # `on:` key as the boolean True (YAML 1.1), so callers read it as data[True].
@@ -18,16 +18,16 @@ query() {
 import sys, yaml
 path, expr = sys.argv[1], sys.argv[2]
 with open(path) as fh:
-    data = yaml.safe_load(fh)
-on = data.get("on", data.get(True))
-job = data["jobs"]["dependabot-rebase"]
+    data = yaml.safe_load(fh) or {}
+on = data.get("on", data.get(True)) or {}
+job = data.get("jobs", {}).get("dependabot-rebase", {})
 ns = {"data": data, "on": on, "job": job}
 print(eval(expr, {}, ns))
 PY
 }
 
 @test "workflow is valid YAML" {
-  run python3 -c "import yaml,sys; yaml.safe_load(open('$WORKFLOW'))"
+  run python3 -c "import yaml; yaml.safe_load(open('$WORKFLOW'))"
   [ "$status" -eq 0 ]
 }
 
