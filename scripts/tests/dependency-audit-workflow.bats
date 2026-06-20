@@ -25,7 +25,7 @@ setup() {
   run python3 -c "
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1]))
-on = wf.get('on', {})
+on = wf.get('on', wf.get(True, {}))
 pr = on.get('pull_request', {})
 branches = pr.get('branches', [])
 assert 'main' in branches, f'pull_request must target main, got: {branches}'
@@ -38,7 +38,7 @@ print('ok')
   run python3 -c "
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1]))
-on = wf.get('on', {})
+on = wf.get('on', wf.get(True, {}))
 push = on.get('push', {})
 branches = push.get('branches', [])
 assert 'main' in branches, f'push must target main, got: {branches}'
@@ -69,6 +69,7 @@ assert 'dependency-audit' in wf['jobs'], 'job name must be dependency-audit'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
 }
 
 @test "concurrency group is defined" {
@@ -82,6 +83,7 @@ assert c.get('group'), 'concurrency.group must be set'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
 }
 
 @test "concurrency cancels superseded in-progress runs" {
@@ -93,4 +95,5 @@ assert c.get('cancel-in-progress') is True, 'cancel-in-progress must be true'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
 }
