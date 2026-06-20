@@ -97,10 +97,11 @@ check_setting "secret_scanning_non_provider_patterns"
 check_setting "secret_scanning_ai_detection"
 check_setting "dependabot_security_updates"
 
-# ── Disable Claude app check-suite auto-trigger ───────────────────────────────
-# The Claude GitHub App (id: 1236702) auto-trigger creates a queued check suite
-# on every push that is never completed, permanently blocking auto-merge.
-# Disabling it prevents GitHub from opening orphaned check suites for this app.
+# ── Disable check-suite auto-triggers ────────────────────────────────────────
+# The Claude GitHub App (id: 1236702) and CodeRabbit (id: 347564) auto-triggers
+# create queued check suites on every push that are never completed, permanently
+# blocking auto-merge. Disabling them prevents GitHub from opening orphaned
+# check suites for these apps.
 # Standard: https://github.com/petry-projects/.github/blob/main/standards/github-settings.md
 #
 # NOTE: This endpoint requires a GitHub App token or a fine-grained PAT with
@@ -109,7 +110,7 @@ check_setting "dependabot_security_updates"
 # GH_PAT requires Administration: write as well as Checks: write.
 # Set GH_PAT to a supported token; on failure the script warns and exits 1.
 
-echo "Disabling check-suite auto-trigger for Claude app (id: 1236702)..."
+echo "Disabling check-suite auto-triggers for Claude (id: 1236702) and CodeRabbit (id: 347564)..."
 
 # The PATCH response echoes the resulting preferences object. Capture it so we
 # can read back and confirm the auto-trigger setting was applied — this is the
@@ -125,11 +126,15 @@ if gh api -X PATCH "repos/$REPO/check-suites/preferences" \
     {
       "app_id": 1236702,
       "setting": false
+    },
+    {
+      "app_id": 347564,
+      "setting": false
     }
   ]
 }
 JSON
-  echo "  [OK] check-suite auto-trigger disabled for Claude app (1236702)"
+  echo "  [OK] check-suite auto-triggers disabled for Claude (1236702) and CodeRabbit (347564)"
   verify_check_suite_pref "$CS_RESPONSE_FILE"
 else
   echo "  [WARN] check-suite preferences require a fine-grained PAT (Administration: write + Checks: write) or GitHub App token."
