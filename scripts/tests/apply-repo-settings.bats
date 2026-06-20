@@ -36,7 +36,7 @@ if [[ " $* " == *" --input - "* ]]; then
   if [[ "$url_arg" == *check-suites/preferences* ]]; then
     # Echo the applied preferences the way the real check-suites/preferences
     # PATCH endpoint does, so the script can read back and verify them.
-    printf '{"preferences":{"auto_trigger_checks":[{"app_id":1236702,"setting":false}]},"repository":{"id":1,"name":"test-repo"}}'
+    printf '{"preferences":{"auto_trigger_checks":[{"app_id":1236702,"setting":false},{"app_id":347564,"setting":false}]},"repository":{"id":1,"name":"test-repo"}}'
   else
     echo '{}'
   fi
@@ -175,6 +175,28 @@ with open(sys.argv[1]) as f:
     d = json.load(f)
 checks = {c["app_id"]: c["setting"] for c in d["auto_trigger_checks"]}
 assert checks.get(1236702) is False, f"expected app 1236702 disabled, got {checks}"
+print("ok")
+PY
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
+@test "check-suite PATCH payload disables auto-trigger for CodeRabbit app 347564" {
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+
+  payload_file=$(grep -rl '"auto_trigger_checks"' "$PAYLOAD_DIR" 2>/dev/null | head -1)
+  [ -n "$payload_file" ] || {
+    echo "No payload file captured containing auto_trigger_checks"
+    return 1
+  }
+
+  run python3 - "$payload_file" << 'PY'
+import json, sys
+with open(sys.argv[1]) as f:
+    d = json.load(f)
+checks = {c["app_id"]: c["setting"] for c in d["auto_trigger_checks"]}
+assert checks.get(347564) is False, f"expected app 347564 disabled, got {checks}"
 print("ok")
 PY
   [ "$status" -eq 0 ]
