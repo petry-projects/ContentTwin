@@ -42,6 +42,8 @@ if [[ " $* " == *" --input - "* ]]; then
   fi
 elif [[ "$*" == *--jq* && "$*" == *security_and_analysis* ]]; then
   printf '{"secret_scanning":{"status":"enabled"},"secret_scanning_push_protection":{"status":"enabled"},"secret_scanning_non_provider_patterns":{"status":"enabled"},"secret_scanning_ai_detection":{"status":"enabled"},"dependabot_security_updates":{"status":"enabled"}}'
+elif [[ "$*" == *fork-pr-contributor-approval* ]]; then
+  printf 'first_time_contributors_new_to_github\n'
 else
   echo '{}'
 fi
