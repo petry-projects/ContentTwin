@@ -38,4 +38,4 @@ concurrency:
 
 jobs:
   dependency-audit:
-    uses: petry-projects/.github/.github/workflows/dependency-audit-reusable.yml@376a4fcb1117444595e3e702fa450873d0e54310 # dependency-audit/stable
+    uses: petry-projects/.github/.github/workflows/dependency-audit-reusable.yml@dependency-audit/stable
