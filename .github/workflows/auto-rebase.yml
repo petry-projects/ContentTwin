@@ -6,10 +6,9 @@
 # AGENTS — READ BEFORE EDITING:
 #   • This file is a THIN CALLER STUB. All branch-update logic lives in the
 #     reusable workflow above.
-#   • You MUST NOT change: the `uses:` ref — it is pinned to the
-#     `auto-rebase/stable` channel, a moving tag advanced centrally. Never
-#     repoint it to `@main`, a SHA, or a frozen `@vX` (see ci-standards.md →
-#     Reusable workflow versioning). Also do not change the trigger event,
+#   • You MUST NOT change: the `uses:` ref in caller repos. It is managed by
+#     standards sync and pinned to a reviewed commit SHA (annotated with the
+#     `auto-rebase/stable` channel intent). Also do not change the trigger event,
 #     the concurrency group name,
 #     or the job-level `permissions:` block — reusable workflows can be
 #     granted no more permissions than the calling job has, so removing
@@ -50,5 +49,5 @@ jobs:
     permissions:
       contents: write      # update-branch via GITHUB_TOKEN (may touch .github/workflows/)
       pull-requests: write # post comments on PRs
-    uses: petry-projects/.github/.github/workflows/auto-rebase-reusable.yml@auto-rebase/stable
+    uses: petry-projects/.github/.github/workflows/auto-rebase-reusable.yml@376a4fcb1117444595e3e702fa450873d0e54310 # auto-rebase/stable
     secrets: inherit
