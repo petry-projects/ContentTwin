@@ -76,7 +76,7 @@ PAYLOAD='{
 # review feedback on normal PRs but must not be a merge gate.
 # See: https://github.com/petry-projects/ContentTwin/issues/81
 
-if [ -n "$EXISTING_ID" ]; then
+if [[ -n "$EXISTING_ID" ]]; then
   echo "  Updating existing '$RULESET_NAME' ruleset (id: $EXISTING_ID)..."
   echo "$PAYLOAD" | gh api "repos/$REPO/rulesets/$EXISTING_ID" -X PUT --input -
 else
