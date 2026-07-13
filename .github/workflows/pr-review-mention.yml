@@ -33,9 +33,21 @@ on:
 
 permissions: {}
 
+# Collapse superseded runs on the same PR/issue conversation. Near-simultaneous
+# comment and review-request events (e.g. multiple review comments posted at once
+# by the bot) would otherwise each spawn a caller run; the superseded ones get
+# held pending approval (action_required) and inflate the Fleet Monitor failure
+# rate (#323). Mirrors the fix applied to pr-auto-review.yml in #274. The group
+# keys on the PR/issue number so runs on unrelated conversations are not
+# cross-cancelled — github.ref is the default branch for comment events, so it is
+# only a last-resort fallback here.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pr-review-mention:
     permissions:
       pull-requests: write
-    uses: petry-projects/.github/.github/workflows/pr-review-mention-reusable.yml@pr-review-mention/v2-stable  # NOSONAR(githubactions:S7637) first-party channel ref
+    uses: petry-projects/.github/.github/workflows/pr-review-mention-reusable.yml@pr-review-mention/stable  # NOSONAR(githubactions:S7637) first-party channel ref
     secrets: inherit
