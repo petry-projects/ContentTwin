@@ -1,6 +1,6 @@
 # ─────────────────────────────────────────────────────────────────────────────
 # SOURCE OF TRUTH: petry-projects/.github/standards/workflows/dependency-audit.yml
-# Standard:        petry-projects/.github/standards/ci-standards.md#5-dependency-audit-dependency-auditym
+# Standard:        petry-projects/.github/standards/ci-standards.md#7-dependency-audit-dependency-audityml
 # Reusable:        petry-projects/.github/.github/workflows/dependency-audit-reusable.yml
 #
 # AGENTS — READ BEFORE EDITING:
@@ -28,14 +28,6 @@ on:
 permissions:
   contents: read
 
-# Cancel a superseded in-progress run on the same ref so a new push/PR commit
-# doesn't race an older run — trims redundant concurrent runs (issue #264).
-# Caller-local reliability addition; mirrors ci.yml. Does not alter the trigger
-# events, the `uses:` line, or the job name (the required status check).
-concurrency:
-  group: dependency-audit-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   dependency-audit:
-    uses: petry-projects/.github/.github/workflows/dependency-audit-reusable.yml@dependency-audit/stable  # NOSONAR(githubactions:S7637) first-party channel ref
+    uses: petry-projects/.github/.github/workflows/dependency-audit-reusable.yml@dependency-audit/v2-stable  # NOSONAR(githubactions:S7637) first-party channel ref
