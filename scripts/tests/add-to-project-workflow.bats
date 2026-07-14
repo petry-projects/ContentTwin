@@ -32,8 +32,8 @@ setup() {
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1])) or {}
 on = wf.get('on') or wf.get(True) or {}
-assert sorted(on.get('issues', {}).get('types', [])) == sorted(['opened', 'labeled', 'unlabeled', 'reopened']), f'issues triggers changed: {on.get(\"issues\")!r}'
-assert sorted(on.get('pull_request_target', {}).get('types', [])) == sorted(['opened', 'labeled', 'unlabeled', 'reopened', 'ready_for_review']), f'pull_request_target triggers changed: {on.get(\"pull_request_target\")!r}'
+assert sorted((on.get('issues') or {}).get('types', [])) == sorted(['opened', 'labeled', 'unlabeled', 'reopened']), f'issues triggers changed: {on.get(\"issues\")!r}'
+assert sorted((on.get('pull_request_target') or {}).get('types', [])) == sorted(['opened', 'labeled', 'unlabeled', 'reopened', 'ready_for_review']), f'pull_request_target triggers changed: {on.get(\"pull_request_target\")!r}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
