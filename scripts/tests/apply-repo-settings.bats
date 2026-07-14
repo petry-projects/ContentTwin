@@ -256,8 +256,8 @@ MOCK
   run python3 - "$payload_file" << 'PY'
 import json, sys
 with open(sys.argv[1]) as f:
-    d = json.load(f)
-policy = d["approval_policy"]
+    d = json.load(f) or {}
+policy = d.get("approval_policy")
 assert policy == "first_time_contributors_new_to_github", \
     f"expected 'first_time_contributors_new_to_github', got '{policy}'"
 print("ok")
