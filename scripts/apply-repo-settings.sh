@@ -153,6 +153,16 @@ fi
 # never contributed to anything on GitHub — established bots and external
 # reviewers are no longer affected, while genuine drive-by contributors
 # from public forks still require approval.
+#
+# This is a repo-wide setting, so it is the effective remedy for the whole
+# class of comment/review-triggered thin-caller workflows — including
+# `pr-review-mention.yml` (issue #329), whose `issue_comment` /
+# `pull_request_review_comment` / `review_requested` runs hit the same
+# `action_required` trap. Its concurrency block (#323) cannot help: those runs
+# conclude in ~1s so there is rarely an in-progress run to cancel, and
+# concurrency does not cancel runs pending approval. Guarded by
+# scripts/tests/apply-repo-settings.bats so a template sync cannot silently
+# revert it to the default.
 
 readonly EXPECTED_APPROVAL_POLICY="first_time_contributors_new_to_github"
 
