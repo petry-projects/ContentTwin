@@ -51,7 +51,8 @@ print('ok')
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1])) or {}
 c = wf.get('concurrency') or {}
-assert c.get('cancel-in-progress') is False, f'cancel-in-progress must be false, got: {c.get(\"cancel-in-progress\")!r}'
+val = c.get('cancel-in-progress')
+assert val is False, f'cancel-in-progress must be false, got: {val!r}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
