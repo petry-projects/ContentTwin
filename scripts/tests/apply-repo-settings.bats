@@ -233,3 +233,41 @@ MOCK
   [ "$status" -eq 0 ]
   [[ "$output" == *"check-suite preferences could not be read back"* ]]
 }
+
+# ── Fork-PR contributor approval policy (compliance: issues #216, #329) ────────
+# The default `first_time_contributors` policy sends bot-triggered runs (e.g. the
+# Copilot reviewer's comment / review-request events feeding pr-auto-review.yml
+# and pr-review-mention.yml) to `action_required` purgatory, which
+# fleet_monitor.sh counts as failures and pushes those workflows above the 10%
+# Fleet Monitor threshold. Narrowing to `first_time_contributors_new_to_github`
+# is the effective, repo-wide remedy. Guard it so a template sync or careless
+# edit cannot silently revert to the default and reintroduce the failure spike.
+
+@test "PUT sets fork-PR contributor approval policy to first_time_contributors_new_to_github" {
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+
+  payload_file=$(grep -rl '"approval_policy"' "$PAYLOAD_DIR" 2>/dev/null | head -1)
+  [ -n "$payload_file" ] || {
+    echo "No payload file captured containing approval_policy"
+    return 1
+  }
+
+  run python3 - "$payload_file" << 'PY'
+import json, sys
+with open(sys.argv[1]) as f:
+    d = json.load(f) or {}
+policy = d.get("approval_policy")
+assert policy == "first_time_contributors_new_to_github", \
+    f"expected 'first_time_contributors_new_to_github', got '{policy}'"
+print("ok")
+PY
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
+@test "script PUTs the fork-pr-contributor-approval endpoint" {
+  run bash "$SCRIPT"
+  [ "$status" -eq 0 ]
+  grep -q -- "-X PUT .*fork-pr-contributor-approval" "$CALLS_FILE"
+}
