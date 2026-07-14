@@ -1,9 +1,14 @@
 #!/usr/bin/env bats
 # Tests for .github/workflows/pr-review-mention.yml
-# Guards the concurrency fix (issue #323): superseded redundant runs from
-# near-simultaneous comment / review-request events must be cancelled so they
-# don't pile up in the `action_required` state and inflate the Fleet Monitor
-# failure rate. Mirrors the #274 fix guarded by pr-auto-review-workflow.bats.
+# Guards the concurrency fix (issue #333). The #323 attempt used
+# `cancel-in-progress: true`, but when it superseded a *pending* reusable-caller
+# run (before the reusable resolved) GitHub recorded the cancellation as a
+# startup failure — a burst of comment events on one conversation produced a
+# wave of 0-job "failure" runs that inflated the Fleet Monitor failure rate.
+# The fix mirrors add-to-project.yml (#331): `cancel-in-progress: false` with a
+# group keyed on the event name AND the PR/issue number, so superseded runs are
+# recorded as clean `cancelled` (not `failure`) and distinct event types on the
+# same conversation don't cross-cancel.
 
 WORKFLOW=".github/workflows/pr-review-mention.yml"
 
@@ -37,28 +42,36 @@ print('ok')
   [[ "$output" == "ok" ]]
 }
 
-@test "pr-review-mention concurrency cancels in-progress runs" {
+@test "pr-review-mention concurrency does not cancel in-progress runs" {
+  # cancel-in-progress must be false: superseding a pending reusable-caller run
+  # makes GitHub record it as a startup failure, so a comment burst inflates the
+  # failure rate (#333). With false, superseded runs are recorded as clean
+  # `cancelled`. Mirrors add-to-project.yml (#331).
   run python3 -c "
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1])) or {}
 c = wf.get('concurrency') or {}
-assert c.get('cancel-in-progress') is True, 'cancel-in-progress must be true'
+val = c.get('cancel-in-progress')
+assert val is False, f'cancel-in-progress must be false, got: {val!r}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
   [[ "$output" == "ok" ]]
 }
 
-@test "pr-review-mention concurrency group is keyed per conversation" {
+@test "pr-review-mention concurrency group is keyed per event and conversation" {
   # The workflow fires on issue_comment, pull_request_review_comment and
   # pull_request events, whose github.ref is the default branch for comment
   # events. Keying only on github.ref would collapse runs across unrelated PRs,
-  # so the group must key on the PR/issue number (with a github.ref fallback).
+  # so the group keys on the PR/issue number. It also keys on github.event_name
+  # so distinct event types on the same conversation get distinct groups and do
+  # not cross-cancel (mirrors add-to-project.yml, #333/#331).
   run python3 -c "
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1])) or {}
 c = wf.get('concurrency') or {}
 group = c.get('group', '')
+assert 'github.event_name' in group, f'group must key on the event name, got: {group!r}'
 assert 'github.event.issue.number' in group, f'group must key on issue number, got: {group!r}'
 assert 'github.event.pull_request.number' in group, f'group must key on PR number, got: {group!r}'
 print('ok')
