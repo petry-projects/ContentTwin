@@ -78,10 +78,10 @@ PAYLOAD='{
 
 if [[ -n "$EXISTING_ID" ]]; then
   echo "  Updating existing '$RULESET_NAME' ruleset (id: $EXISTING_ID)..."
-  echo "$PAYLOAD" | gh api "repos/$REPO/rulesets/$EXISTING_ID" -X PUT --input -
+  printf '%s\n' "$PAYLOAD" | gh api "repos/$REPO/rulesets/$EXISTING_ID" -X PUT --input -
 else
   echo "  Creating '$RULESET_NAME' ruleset..."
-  echo "$PAYLOAD" | gh api "repos/$REPO/rulesets" -X POST --input -
+  printf '%s\n' "$PAYLOAD" | gh api "repos/$REPO/rulesets" -X POST --input -
 fi
 
 echo "Done. Ruleset '$RULESET_NAME' is active."
@@ -135,10 +135,10 @@ PR_QUALITY_PAYLOAD='{
 
 if [[ -n "$PR_QUALITY_EXISTING_ID" ]]; then
   echo "  Updating existing '$PR_QUALITY_NAME' ruleset (id: $PR_QUALITY_EXISTING_ID)..."
-  echo "$PR_QUALITY_PAYLOAD" | gh api "repos/$REPO/rulesets/$PR_QUALITY_EXISTING_ID" -X PUT --input -
+  printf '%s\n' "$PR_QUALITY_PAYLOAD" | gh api "repos/$REPO/rulesets/$PR_QUALITY_EXISTING_ID" -X PUT --input -
 else
   echo "  Creating '$PR_QUALITY_NAME' ruleset..."
-  echo "$PR_QUALITY_PAYLOAD" | gh api "repos/$REPO/rulesets" -X POST --input -
+  printf '%s\n' "$PR_QUALITY_PAYLOAD" | gh api "repos/$REPO/rulesets" -X POST --input -
 fi
 
 echo "Done. Ruleset '$PR_QUALITY_NAME' is active."

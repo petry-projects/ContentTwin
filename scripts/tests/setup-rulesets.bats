@@ -30,7 +30,7 @@ set -euo pipefail
 echo "$*" >> "$CALLS_FILE"
 
 if [[ " $* " == *" --input - "* ]]; then
-  payload_file="$(mktemp "$PAYLOAD_DIR/payload.XXXXXX.json")"
+  payload_file="$(mktemp "$PAYLOAD_DIR/payload.XXXXXX")"
   cat > "$payload_file"
   echo '{}'
 elif [[ "$*" == *--jq* ]]; then
@@ -49,18 +49,18 @@ MOCK
 
 # Locate the captured payload whose ruleset name matches the given argument.
 pr_quality_payload() {
-  grep -rl '"pr-quality"' "$PAYLOAD_DIR" 2>/dev/null | head -1
+  grep -rl '"pr-quality"' "$PAYLOAD_DIR" 2>/dev/null | head -n 1
 }
 
 # ── Execution tests ───────────────────────────────────────────────────────────
 
 @test "script exits 0 with mocked gh" {
-  run bash "$SCRIPT"
+  run bash "$BATS_TEST_DIRNAME/../setup-rulesets.sh"
   [ "$status" -eq 0 ]
 }
 
 @test "script applies a pr-quality ruleset" {
-  run bash "$SCRIPT"
+  run bash "$BATS_TEST_DIRNAME/../setup-rulesets.sh"
   [ "$status" -eq 0 ]
   payload_file="$(pr_quality_payload)"
   [ -n "$payload_file" ] || {
@@ -72,7 +72,7 @@ pr_quality_payload() {
 # ── Drifted-parameter test (the finding in issue #339) ─────────────────────────
 
 @test "pr-quality payload sets dismiss_stale_reviews_on_push to true" {
-  run bash "$SCRIPT"
+  run bash "$BATS_TEST_DIRNAME/../setup-rulesets.sh"
   [ "$status" -eq 0 ]
 
   payload_file="$(pr_quality_payload)"
@@ -97,7 +97,7 @@ PY
 # ── Full codified-parameter coverage ──────────────────────────────────────────
 
 @test "pr-quality payload matches all codified pull_request parameters" {
-  run bash "$SCRIPT"
+  run bash "$BATS_TEST_DIRNAME/../setup-rulesets.sh"
   [ "$status" -eq 0 ]
 
   payload_file="$(pr_quality_payload)"
