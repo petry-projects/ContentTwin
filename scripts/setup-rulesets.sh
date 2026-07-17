@@ -86,6 +86,69 @@ fi
 
 echo "Done. Ruleset '$RULESET_NAME' is active."
 
+# ── pr-quality ───────────────────────────────────────────────────────────────
+# Pull-request quality gate for the default branch. Mirrors the codified org
+# source of truth, standards/rulesets/pr-quality.json (petry-projects/.github
+# #575/#580). require_code_owner_review MUST be true; the compliance audit
+# reports drift when the live ruleset reports false.
+# Standard:
+#   standards/github-settings.md#pr-quality--standard-ruleset-all-repositories
+# See: https://github.com/petry-projects/ContentTwin/issues/338
+
+RULESET_NAME="pr-quality"
+
+EXISTING_ID=$(gh api "repos/$REPO/rulesets" \
+  --jq ".[] | select(.name == \"$RULESET_NAME\") | .id" 2>/dev/null || true)
+
+# bypass_actors mirror the codified standard: the org admin role and the
+# Integration app (actor_id 3167543) may always bypass so automation is not
+# deadlocked by the code-owner requirement.
+PAYLOAD='{
+  "name": "pr-quality",
+  "target": "branch",
+  "enforcement": "active",
+  "bypass_actors": [
+    {
+      "actor_type": "OrganizationAdmin",
+      "bypass_mode": "always"
+    },
+    {
+      "actor_id": 3167543,
+      "actor_type": "Integration",
+      "bypass_mode": "always"
+    }
+  ],
+  "conditions": {
+    "ref_name": {
+      "include": ["~DEFAULT_BRANCH"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 1,
+        "require_code_owner_review": true,
+        "required_review_thread_resolution": true,
+        "dismiss_stale_reviews_on_push": true,
+        "require_last_push_approval": true,
+        "allowed_merge_methods": ["squash"]
+      }
+    }
+  ]
+}'
+
+if [[ -n "$EXISTING_ID" ]]; then
+  echo "  Updating existing '$RULESET_NAME' ruleset (id: $EXISTING_ID)..."
+  echo "$PAYLOAD" | gh api "repos/$REPO/rulesets/$EXISTING_ID" -X PUT --input -
+else
+  echo "  Creating '$RULESET_NAME' ruleset..."
+  echo "$PAYLOAD" | gh api "repos/$REPO/rulesets" -X POST --input -
+fi
+
+echo "Done. Ruleset '$RULESET_NAME' is active."
+
 # ── dependabot security updates ──────────────────────────────────────────────
 # Enables Dependabot security updates so GitHub automatically opens PRs to
 # fix known vulnerabilities in dependencies.
