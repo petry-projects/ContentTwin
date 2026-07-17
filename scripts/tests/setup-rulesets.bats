@@ -119,7 +119,6 @@ assert p["require_code_owner_review"] is True, p
 assert p["required_review_thread_resolution"] is True, p
 assert p["dismiss_stale_reviews_on_push"] is True, p
 assert p["require_last_push_approval"] is True, p
-assert p["allowed_merge_methods"] == ["squash"], p
 print("ok")
 PY
   [ "$status" -eq 0 ]

@@ -109,7 +109,8 @@ PAYLOAD='{
   "enforcement": "active",
   "bypass_actors": [
     {
-      "actor_type": "OrganizationAdmin",
+      "actor_type": "RepositoryRole",
+      "actor_id": 5,
       "bypass_mode": "always"
     },
     {
@@ -132,8 +133,7 @@ PAYLOAD='{
         "require_code_owner_review": true,
         "required_review_thread_resolution": true,
         "dismiss_stale_reviews_on_push": true,
-        "require_last_push_approval": true,
-        "allowed_merge_methods": ["squash"]
+        "require_last_push_approval": true
       }
     }
   ]
