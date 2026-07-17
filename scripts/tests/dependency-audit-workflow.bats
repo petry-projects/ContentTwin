@@ -72,26 +72,14 @@ print('ok')
   [[ "$output" == "ok" ]]
 }
 
-@test "concurrency group is defined" {
+# concurrency: is a centrally-owned surface on this thin caller stub — the
+# canonical standards/workflows/dependency-audit.yml defines no top-level
+# concurrency block, so the stub must not either (compliance: stub-surface-drift).
+@test "no top-level concurrency block (matches canonical)" {
   run python3 -c "
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1]))
-assert 'concurrency' in wf, 'workflow has no top-level concurrency block'
-c = wf['concurrency']
-assert isinstance(c, dict), 'concurrency must be a mapping'
-assert c.get('group'), 'concurrency.group must be set'
-print('ok')
-" "$WORKFLOW"
-  [ "$status" -eq 0 ]
-  [[ "$output" == "ok" ]]
-}
-
-@test "concurrency cancels superseded in-progress runs" {
-  run python3 -c "
-import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1]))
-c = wf.get('concurrency', {})
-assert c.get('cancel-in-progress') is True, 'cancel-in-progress must be true'
+assert 'concurrency' not in wf, 'thin caller stub must not define a top-level concurrency block; it is centrally owned'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
