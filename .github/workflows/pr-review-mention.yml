@@ -33,6 +33,23 @@ on:
 
 permissions: {}
 
+# Serialize runs on the same PR/issue conversation without cancelling in-progress
+# ones. A comment burst on one conversation (e.g. a batch of audit comments)
+# spawns many caller runs; with cancel-in-progress: true, superseding a *pending*
+# reusable-caller run — before the reusable resolves — makes GitHub record the
+# cancellation as a startup failure (0 jobs), which inflated the Fleet Monitor
+# failure rate (#333, superseding the #323 attempt). With cancel-in-progress:
+# false the superseded runs are recorded as clean `cancelled` instead. The group
+# keys on github.event_name (so distinct event types on the same conversation
+# don't cross-cancel) and the PR/issue number (so unrelated conversations don't
+# collapse — github.ref is the default branch for comment events). Mirrors the
+# fix applied to add-to-project.yml in #331.
+concurrency:
+  group: >-
+    pr-review-mention-${{ format('{0}-{1}', github.event_name,
+       github.event.issue.number || github.event.pull_request.number) }}
+  cancel-in-progress: false
+
 jobs:
   pr-review-mention:
     permissions:
