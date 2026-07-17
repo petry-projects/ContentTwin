@@ -78,13 +78,70 @@ PAYLOAD='{
 
 if [[ -n "$EXISTING_ID" ]]; then
   echo "  Updating existing '$RULESET_NAME' ruleset (id: $EXISTING_ID)..."
-  echo "$PAYLOAD" | gh api "repos/$REPO/rulesets/$EXISTING_ID" -X PUT --input -
+  printf '%s\n' "$PAYLOAD" | gh api "repos/$REPO/rulesets/$EXISTING_ID" -X PUT --input -
 else
   echo "  Creating '$RULESET_NAME' ruleset..."
-  echo "$PAYLOAD" | gh api "repos/$REPO/rulesets" -X POST --input -
+  printf '%s\n' "$PAYLOAD" | gh api "repos/$REPO/rulesets" -X POST --input -
 fi
 
 echo "Done. Ruleset '$RULESET_NAME' is active."
+
+# ── pr-quality ───────────────────────────────────────────────────────────────
+# Pull-request review requirements for the default branch. Mirrors the codified
+# org source of truth so `setup-rulesets.sh` converges this repo's live ruleset:
+#   petry-projects/.github:standards/rulesets/pr-quality.json
+#   standards/github-settings.md#pr-quality--standard-ruleset-all-repositories
+#
+# dismiss_stale_reviews_on_push MUST be true: it re-requests review after any
+# push so approvals cannot be inherited by unreviewed code (compliance: #339).
+#
+# Bypass actors match every ruleset targeting main (see the bypass-actors
+# standard): OrganizationAdmin plus the dependabot-automerge-petry GitHub App
+# (Integration actor_id 3167543) whose rebase workflow re-approves updated PRs.
+
+PR_QUALITY_NAME="pr-quality"
+
+PR_QUALITY_EXISTING_ID=$(gh api "repos/$REPO/rulesets" \
+  --jq ".[] | select(.name == \"$PR_QUALITY_NAME\") | .id" 2>/dev/null || true)
+
+PR_QUALITY_PAYLOAD='{
+  "name": "pr-quality",
+  "target": "branch",
+  "enforcement": "active",
+  "bypass_actors": [
+    { "actor_type": "OrganizationAdmin", "bypass_mode": "always" },
+    { "actor_id": 3167543, "actor_type": "Integration", "bypass_mode": "always" }
+  ],
+  "conditions": {
+    "ref_name": {
+      "include": ["~DEFAULT_BRANCH"],
+      "exclude": []
+    }
+  },
+  "rules": [
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 1,
+        "require_code_owner_review": true,
+        "required_review_thread_resolution": true,
+        "dismiss_stale_reviews_on_push": true,
+        "require_last_push_approval": true,
+        "allowed_merge_methods": ["squash"]
+      }
+    }
+  ]
+}'
+
+if [[ -n "$PR_QUALITY_EXISTING_ID" ]]; then
+  echo "  Updating existing '$PR_QUALITY_NAME' ruleset (id: $PR_QUALITY_EXISTING_ID)..."
+  printf '%s\n' "$PR_QUALITY_PAYLOAD" | gh api "repos/$REPO/rulesets/$PR_QUALITY_EXISTING_ID" -X PUT --input -
+else
+  echo "  Creating '$PR_QUALITY_NAME' ruleset..."
+  printf '%s\n' "$PR_QUALITY_PAYLOAD" | gh api "repos/$REPO/rulesets" -X POST --input -
+fi
+
+echo "Done. Ruleset '$PR_QUALITY_NAME' is active."
 
 # ── dependabot security updates ──────────────────────────────────────────────
 # Enables Dependabot security updates so GitHub automatically opens PRs to
