@@ -78,7 +78,8 @@ print('ok')
 @test "no top-level concurrency block (matches canonical)" {
   run python3 -c "
 import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1]))
+with open(sys.argv[1]) as f:
+    wf = yaml.safe_load(f) or {}
 assert 'concurrency' not in wf, 'thin caller stub must not define a top-level concurrency block; it is centrally owned'
 print('ok')
 " "$WORKFLOW"
