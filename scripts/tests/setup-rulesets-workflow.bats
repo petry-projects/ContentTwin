@@ -85,8 +85,10 @@ pr_quality_payload() {
 import json, sys
 with open(sys.argv[1]) as f:
     d = json.load(f)
-rule = next(r for r in d["rules"] if r["type"] == "pull_request")
-val = rule["parameters"]["require_last_push_approval"]
+rule = next((r for r in d.get("rules", []) if r.get("type") == "pull_request"), None)
+assert rule is not None, "No pull_request rule found in ruleset"
+parameters = rule.get("parameters") or {}
+val = parameters.get("require_last_push_approval")
 assert val is True, f"expected require_last_push_approval true, got {val!r}"
 print("ok")
 PY
@@ -105,10 +107,10 @@ PY
 import json, sys
 with open(sys.argv[1]) as f:
     d = json.load(f)
-assert d["target"] == "branch", d.get("target")
-assert d["enforcement"] == "active", d.get("enforcement")
-includes = d["conditions"]["ref_name"]["include"]
-assert includes == ["~DEFAULT_BRANCH"], includes
+assert d.get("target") == "branch", f"expected target 'branch', got {d.get('target')!r}"
+assert d.get("enforcement") == "active", f"expected enforcement 'active', got {d.get('enforcement')!r}"
+includes = ((d.get("conditions") or {}).get("ref_name") or {}).get("include")
+assert includes == ["~DEFAULT_BRANCH"], f"expected include ['~DEFAULT_BRANCH'], got {includes!r}"
 print("ok")
 PY
   [ "$status" -eq 0 ]
@@ -126,8 +128,9 @@ PY
 import json, sys
 with open(sys.argv[1]) as f:
     d = json.load(f)
-rule = next(r for r in d["rules"] if r["type"] == "pull_request")
-p = rule["parameters"]
+rule = next((r for r in d.get("rules", []) if r.get("type") == "pull_request"), None)
+assert rule is not None, "No pull_request rule found in ruleset"
+p = rule.get("parameters") or {}
 expected = {
     "required_approving_review_count": 1,
     "require_code_owner_review": True,
