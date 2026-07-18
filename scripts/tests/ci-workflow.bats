@@ -33,10 +33,14 @@ setup() {
 @test "ci triggers on push and pull_request to main" {
   run python3 -c "
 import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8'))
-on = wf.get('on', wf.get(True, {}))
-assert 'main' in on.get('push', {}).get('branches', []), f'push must target main, got: {on.get(\"push\")!r}'
-assert 'main' in on.get('pull_request', {}).get('branches', []), f'pull_request must target main, got: {on.get(\"pull_request\")!r}'
+wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8')) or {}
+on = wf.get('on') or wf.get(True) or {}
+push_val = on.get('push')
+push_branches = (push_val or {}).get('branches', [])
+assert 'main' in push_branches, f'push must target main, got: {push_val!r}'
+pr_val = on.get('pull_request')
+pr_branches = (pr_val or {}).get('branches', [])
+assert 'main' in pr_branches, f'pull_request must target main, got: {pr_val!r}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
@@ -46,7 +50,7 @@ print('ok')
 @test "ci resets top-level permissions to empty" {
   run python3 -c "
 import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8'))
+wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8')) or {}
 perms = wf.get('permissions')
 assert perms == {}, f'top-level permissions must be reset to {{}}, got: {perms!r}'
 print('ok')
@@ -58,8 +62,8 @@ print('ok')
 @test "ci declares SHA-scoped concurrency that cancels in-progress runs" {
   run python3 -c "
 import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8'))
-c = wf.get('concurrency', {})
+wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8')) or {}
+c = wf.get('concurrency') or {}
 assert isinstance(c, dict), f'concurrency must be a mapping, got: {c!r}'
 group = c.get('group', '')
 assert 'github.ref' in group and 'github.sha' in group, f'concurrency.group must be SHA-scoped per ref, got: {group!r}'
@@ -75,10 +79,10 @@ print('ok')
 @test "every ci job declares an integer timeout-minutes within the org cap" {
   run python3 -c "
 import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8'))
-jobs = wf['jobs']
+wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8')) or {}
+jobs = wf.get('jobs') or {}
 for name, job in jobs.items():
-  tm = job.get('timeout-minutes')
+  tm = (job or {}).get('timeout-minutes')
   assert isinstance(tm, int), f'job {name!r} must set an integer timeout-minutes, got: {tm!r}'
   assert 1 <= tm <= 59, f'job {name!r} timeout-minutes must be within org cap 1..59, got: {tm}'
 print('ok')
@@ -92,8 +96,10 @@ print('ok')
 @test "shfmt download retries on transient failure" {
   run python3 -c "
 import sys, yaml, re
-wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8'))
-steps = wf['jobs']['format']['steps']
+wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8')) or {}
+jobs = wf.get('jobs') or {}
+format_job = jobs.get('format') or {}
+steps = format_job.get('steps') or []
 runs = [str(s.get('run', '')) for s in steps if 'shfmt' in str(s.get('run', ''))]
 assert runs, 'format job must have a step that installs shfmt'
 script = '\n'.join(runs)
@@ -109,8 +115,10 @@ print('ok')
 @test "bats install retries on transient failure" {
   run python3 -c "
 import sys, yaml, re
-wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8'))
-steps = wf['jobs']['test']['steps']
+wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8')) or {}
+jobs = wf.get('jobs') or {}
+test_job = jobs.get('test') or {}
+steps = test_job.get('steps') or []
 runs = [str(s.get('run', '')) for s in steps if 'apt-get' in str(s.get('run', ''))]
 assert runs, 'test job must have a step that installs bats via apt-get'
 script = '\n'.join(runs)
