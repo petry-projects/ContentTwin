@@ -44,13 +44,20 @@ setup() {
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1])) or {}
 on = wf.get('on') or wf.get(True) or {}
-assert sorted((on.get('pull_request') or {}).get('types', [])) == sorted(['opened', 'reopened', 'synchronize']), f'pull_request triggers changed: {on.get(\"pull_request\")!r}'
-assert sorted((on.get('pull_request_review') or {}).get('types', [])) == sorted(['submitted']), f'pull_request_review triggers changed: {on.get(\"pull_request_review\")!r}'
-assert sorted((on.get('pull_request_review_comment') or {}).get('types', [])) == sorted(['created']), f'pull_request_review_comment triggers changed: {on.get(\"pull_request_review_comment\")!r}'
-assert sorted((on.get('issue_comment') or {}).get('types', [])) == sorted(['created']), f'issue_comment triggers changed: {on.get(\"issue_comment\")!r}'
-assert sorted((on.get('issues') or {}).get('types', [])) == sorted(['labeled']), f'issues triggers changed: {on.get(\"issues\")!r}'
-assert sorted((on.get('check_run') or {}).get('types', [])) == sorted(['completed']), f'check_run triggers changed: {on.get(\"check_run\")!r}'
-assert sorted((on.get('repository_dispatch') or {}).get('types', [])) == sorted(['dev-lead-ci-failure', 'dev-lead-reviews-retry', 'dev-lead-issue-retry']), f'repository_dispatch triggers changed: {on.get(\"repository_dispatch\")!r}'
+pr = on.get('pull_request') or {}
+assert sorted(pr.get('types', [])) == sorted(['opened', 'reopened', 'synchronize']), f'pull_request triggers changed: {pr!r}'
+pr_rev = on.get('pull_request_review') or {}
+assert sorted(pr_rev.get('types', [])) == sorted(['submitted']), f'pull_request_review triggers changed: {pr_rev!r}'
+pr_rev_cmt = on.get('pull_request_review_comment') or {}
+assert sorted(pr_rev_cmt.get('types', [])) == sorted(['created']), f'pull_request_review_comment triggers changed: {pr_rev_cmt!r}'
+issue_cmt = on.get('issue_comment') or {}
+assert sorted(issue_cmt.get('types', [])) == sorted(['created']), f'issue_comment triggers changed: {issue_cmt!r}'
+issues = on.get('issues') or {}
+assert sorted(issues.get('types', [])) == sorted(['labeled']), f'issues triggers changed: {issues!r}'
+check_run = on.get('check_run') or {}
+assert sorted(check_run.get('types', [])) == sorted(['completed']), f'check_run triggers changed: {check_run!r}'
+repo_disp = on.get('repository_dispatch') or {}
+assert sorted(repo_disp.get('types', [])) == sorted(['dev-lead-ci-failure', 'dev-lead-reviews-retry', 'dev-lead-issue-retry']), f'repository_dispatch triggers changed: {repo_disp!r}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
@@ -61,7 +68,8 @@ print('ok')
   run python3 -c "
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1])) or {}
-assert wf.get('permissions') == {}, f'top-level permissions must stay empty, got: {wf.get(\"permissions\")!r}'
+perms = wf.get('permissions')
+assert perms == {}, f'top-level permissions must stay empty, got: {perms!r}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
@@ -78,7 +86,8 @@ print('ok')
   run python3 -c "
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1])) or {}
-assert 'concurrency' not in wf, f'dev-lead stub must not add a concurrency block (it is centralised in the reusable), got: {wf.get(\"concurrency\")!r}'
+concurrency = wf.get('concurrency')
+assert 'concurrency' not in wf, f'dev-lead stub must not add a concurrency block (it is centralised in the reusable), got: {concurrency!r}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
@@ -91,7 +100,8 @@ import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1])) or {}
 job = (wf.get('jobs') or {}).get('dev-lead') or {}
 expected = {'contents': 'write', 'pull-requests': 'write', 'issues': 'write', 'actions': 'read', 'checks': 'read', 'statuses': 'read'}
-assert job.get('permissions') == expected, f'job permissions drifted, got: {job.get(\"permissions\")!r}'
+perms = job.get('permissions')
+assert perms == expected, f'job permissions drifted, got: {perms!r}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
