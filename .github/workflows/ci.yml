@@ -44,7 +44,7 @@ jobs:
       - name: Install shfmt
         run: |
           for attempt in 1 2 3; do
-            if curl -sSfL https://github.com/mvdan/sh/releases/download/v3.10.0/shfmt_v3.10.0_linux_amd64 \
+            if curl --proto '=https' -sSfL https://github.com/mvdan/sh/releases/download/v3.10.0/shfmt_v3.10.0_linux_amd64 \
               -o /usr/local/bin/shfmt; then
               chmod +x /usr/local/bin/shfmt
               exit 0

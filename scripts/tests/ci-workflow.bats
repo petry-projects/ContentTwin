@@ -113,6 +113,8 @@ runs = [str(s.get('run', '')) for s in steps if 'shfmt' in str(s.get('run', ''))
 assert runs, 'format job must have a step that installs shfmt'
 script = '\n'.join(runs)
 assert 'curl' in script, 'shfmt install must download via curl'
+assert '--proto' in script, 'shfmt curl must pass --proto to restrict protocols'
+assert '=https' in script, 'shfmt curl --proto flag must enforce HTTPS-only redirects (=https)'
 assert re.search(r'for\s+\w+\s+in', script), 'shfmt install must loop over multiple attempts (retry loop)'
 assert 'sleep' in script, 'shfmt retry loop must back off between attempts (sleep)'
 print('ok')
