@@ -24,7 +24,11 @@ setup() {
 }
 
 @test "ci workflow is valid YAML" {
-  run python3 -c "import sys, yaml; yaml.safe_load(open(sys.argv[1], encoding='utf-8'))" "$WORKFLOW"
+  run python3 -c "
+import sys, yaml
+with open(sys.argv[1], encoding='utf-8') as f:
+  yaml.safe_load(f)
+" "$WORKFLOW"
   [ "$status" -eq 0 ]
 }
 
@@ -33,7 +37,8 @@ setup() {
 @test "ci triggers on push and pull_request to main" {
   run python3 -c "
 import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8')) or {}
+with open(sys.argv[1], encoding='utf-8') as f:
+  wf = yaml.safe_load(f) or {}
 on = wf.get('on') or wf.get(True) or {}
 push_val = on.get('push')
 push_branches = (push_val or {}).get('branches', [])
@@ -50,7 +55,8 @@ print('ok')
 @test "ci resets top-level permissions to empty" {
   run python3 -c "
 import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8')) or {}
+with open(sys.argv[1], encoding='utf-8') as f:
+  wf = yaml.safe_load(f) or {}
 perms = wf.get('permissions')
 assert perms == {}, f'top-level permissions must be reset to {{}}, got: {perms!r}'
 print('ok')
@@ -62,7 +68,8 @@ print('ok')
 @test "ci declares SHA-scoped concurrency that cancels in-progress runs" {
   run python3 -c "
 import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8')) or {}
+with open(sys.argv[1], encoding='utf-8') as f:
+  wf = yaml.safe_load(f) or {}
 c = wf.get('concurrency') or {}
 assert isinstance(c, dict), f'concurrency must be a mapping, got: {c!r}'
 group = c.get('group', '')
@@ -79,7 +86,8 @@ print('ok')
 @test "every ci job declares an integer timeout-minutes within the org cap" {
   run python3 -c "
 import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8')) or {}
+with open(sys.argv[1], encoding='utf-8') as f:
+  wf = yaml.safe_load(f) or {}
 jobs = wf.get('jobs') or {}
 for name, job in jobs.items():
   tm = (job or {}).get('timeout-minutes')
@@ -96,7 +104,8 @@ print('ok')
 @test "shfmt download retries on transient failure" {
   run python3 -c "
 import sys, yaml, re
-wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8')) or {}
+with open(sys.argv[1], encoding='utf-8') as f:
+  wf = yaml.safe_load(f) or {}
 jobs = wf.get('jobs') or {}
 format_job = jobs.get('format') or {}
 steps = format_job.get('steps') or []
@@ -115,7 +124,8 @@ print('ok')
 @test "bats install retries on transient failure" {
   run python3 -c "
 import sys, yaml, re
-wf = yaml.safe_load(open(sys.argv[1], encoding='utf-8')) or {}
+with open(sys.argv[1], encoding='utf-8') as f:
+  wf = yaml.safe_load(f) or {}
 jobs = wf.get('jobs') or {}
 test_job = jobs.get('test') or {}
 steps = test_job.get('steps') or []
