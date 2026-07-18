@@ -18,6 +18,7 @@ jobs:
   lint:
     name: Lint
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -31,16 +32,28 @@ jobs:
   format:
     name: Format
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
+      # Retry the release-asset download: a single transient GitHub CDN blip must
+      # not fail the job and inflate the Fleet Monitor failure rate (issue #360).
       - name: Install shfmt
         run: |
-          curl -sSfL https://github.com/mvdan/sh/releases/download/v3.10.0/shfmt_v3.10.0_linux_amd64 \
-            -o /usr/local/bin/shfmt && chmod +x /usr/local/bin/shfmt
+          for attempt in 1 2 3; do
+            if curl --proto '=https' -sSfL https://github.com/mvdan/sh/releases/download/v3.10.0/shfmt_v3.10.0_linux_amd64 \
+              -o /usr/local/bin/shfmt; then
+              chmod +x /usr/local/bin/shfmt
+              exit 0
+            fi
+            echo "shfmt download attempt ${attempt} failed; retrying in $((attempt * 5))s" >&2
+            sleep "$((attempt * 5))"
+          done
+          echo "shfmt download failed after 3 attempts" >&2
+          exit 1
 
       - name: Check shell script formatting
         run: shfmt -i 2 -d scripts/*.sh
@@ -48,16 +61,26 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:
       - name: Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
+      # Retry the apt mirror update+install: a transient mirror 5xx/timeout must
+      # not fail the job and inflate the Fleet Monitor failure rate (issue #360).
       - name: Install bats
         run: |
-          sudo apt-get update
-          sudo apt-get install -y bats
+          for attempt in 1 2 3; do
+            if sudo apt-get update && sudo apt-get install -y bats; then
+              exit 0
+            fi
+            echo "bats install attempt ${attempt} failed; retrying in $((attempt * 5))s" >&2
+            sleep "$((attempt * 5))"
+          done
+          echo "bats install failed after 3 attempts" >&2
+          exit 1
 
       - name: Run bats tests
         run: bats scripts/tests/
@@ -65,6 +88,7 @@ jobs:
   secret-scan:
     name: Secret scan (gitleaks)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       security-events: write
