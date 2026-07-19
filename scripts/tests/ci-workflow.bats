@@ -190,8 +190,10 @@ script = '\n'.join(str(s.get('run', '')) for s in install)
 env = {}
 for s in install:
   env.update(s.get('env') or {})
-assert env.get('GITLEAKS_VERSION'), 'gitleaks install must pin an explicit GITLEAKS_VERSION'
-assert env.get('GITLEAKS_CHECKSUM'), 'gitleaks install must pin a GITLEAKS_CHECKSUM'
+version = env.get('GITLEAKS_VERSION')
+checksum = env.get('GITLEAKS_CHECKSUM')
+assert version, 'gitleaks install must pin an explicit GITLEAKS_VERSION'
+assert checksum, 'gitleaks install must pin a GITLEAKS_CHECKSUM'
 assert 'sha256sum -c' in script, 'gitleaks binary must be verified with sha256sum -c before use'
 print('ok')
 " "$WORKFLOW"
