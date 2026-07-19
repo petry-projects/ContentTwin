@@ -9,8 +9,17 @@
 #   2. Hung jobs — with no per-job timeout-minutes, a stalled download/scan ran to
 #      GitHub's 6h default and concluded `timed_out`, which fleet_monitor.sh counts
 #      as a failure. Every job now declares a timeout-minutes within the org cap.
+#
+# Also guards the issue #364 fix: the `secret-scan` job previously used
+# `gitleaks/gitleaks-action`, which requires a paid GITLEAKS_LICENSE for org
+# repos. Dependabot PR runs receive no repository secrets, so the license was
+# empty and gitleaks failed `missing gitleaks license` on every Dependabot PR —
+# a conditional failure that pushed the failure rate over threshold. The job now
+# runs the free, pinned gitleaks CLI (binary download + SHA256 verification) per
+# push-protection.md Layer 3, removing the license dependency entirely.
 
 WORKFLOW=".github/workflows/ci.yml"
+GITLEAKS_CONFIG=".gitleaks.toml"
 
 setup() {
   if ! python3 -c "import yaml" &>/dev/null; then
@@ -138,6 +147,114 @@ assert re.search(r'for\s+\w+\s+in', script), 'bats install must loop over multip
 assert 'sleep' in script, 'bats retry loop must back off between attempts (sleep)'
 print('ok')
 " "$WORKFLOW"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
+@test "gitleaks download retries on transient failure" {
+  run python3 -c "
+import sys, yaml, re
+with open(sys.argv[1], encoding='utf-8') as f:
+  wf = yaml.safe_load(f) or {}
+jobs = wf.get('jobs') or {}
+scan = jobs.get('secret-scan') or {}
+steps = scan.get('steps') or []
+install = [s for s in steps if 'gitleaks' in str(s.get('run', '')) and 'detect' not in str(s.get('run', ''))]
+assert install, 'secret-scan must have a step that installs the gitleaks CLI'
+script = '\n'.join(str(s.get('run', '')) for s in install)
+assert 'curl' in script, 'gitleaks install must download via curl'
+assert '--proto' in script, 'gitleaks curl must pass --proto to restrict protocols'
+assert '=https' in script, 'gitleaks curl --proto flag must enforce HTTPS-only redirects (=https)'
+assert re.search(r'for\s+\w+\s+in', script), 'gitleaks install must loop over multiple attempts (retry loop)'
+assert 'sleep' in script, 'gitleaks retry loop must back off between attempts (sleep)'
+print('ok')
+" "$WORKFLOW"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
+# ── License-free secret scan: must not fail on Dependabot PRs (issue #364) ─────
+
+@test "secret-scan does not depend on the licensed gitleaks-action or GITLEAKS_LICENSE" {
+  run python3 -c "
+import sys, yaml
+with open(sys.argv[1], encoding='utf-8') as f:
+  wf = yaml.safe_load(f) or {}
+jobs = wf.get('jobs') or {}
+scan = jobs.get('secret-scan') or {}
+steps = scan.get('steps') or []
+for s in steps:
+  uses = str(s.get('uses', ''))
+  assert 'gitleaks/gitleaks-action' not in uses, (
+    'secret-scan must not use gitleaks/gitleaks-action (requires paid org license; '
+    'fails on Dependabot PRs which get no secrets)')
+blob = yaml.safe_dump(scan)
+assert 'GITLEAKS_LICENSE' not in blob, (
+  'secret-scan must not reference GITLEAKS_LICENSE — the license dependency is '
+  'what breaks Dependabot PR runs')
+print('ok')
+" "$WORKFLOW"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
+@test "secret-scan installs a pinned gitleaks binary verified with a checksum" {
+  run python3 -c "
+import sys, yaml
+with open(sys.argv[1], encoding='utf-8') as f:
+  wf = yaml.safe_load(f) or {}
+jobs = wf.get('jobs') or {}
+scan = jobs.get('secret-scan') or {}
+steps = scan.get('steps') or []
+install = [s for s in steps if 'gitleaks' in str(s.get('run', '')) and 'detect' not in str(s.get('run', ''))]
+assert install, 'secret-scan must have a step that installs the gitleaks CLI'
+script = '\n'.join(str(s.get('run', '')) for s in install)
+env = {}
+for s in install:
+  env.update(s.get('env') or {})
+version = env.get('GITLEAKS_VERSION')
+checksum = env.get('GITLEAKS_CHECKSUM')
+assert version, 'gitleaks install must pin an explicit GITLEAKS_VERSION'
+assert checksum, 'gitleaks install must pin a GITLEAKS_CHECKSUM'
+assert 'sha256sum -c' in script, 'gitleaks binary must be verified with sha256sum -c before use'
+print('ok')
+" "$WORKFLOW"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
+@test "secret-scan runs the gitleaks CLI with redact, exit-code, and config" {
+  run python3 -c "
+import sys, yaml
+with open(sys.argv[1], encoding='utf-8') as f:
+  wf = yaml.safe_load(f) or {}
+jobs = wf.get('jobs') or {}
+scan = jobs.get('secret-scan') or {}
+steps = scan.get('steps') or []
+runs = [str(s.get('run', '')) for s in steps if 'gitleaks detect' in str(s.get('run', ''))]
+assert runs, 'secret-scan must run gitleaks detect via the CLI'
+script = '\n'.join(runs)
+assert '--redact' in script, 'gitleaks detect must pass --redact so secrets never hit logs'
+assert '--exit-code 1' in script, 'gitleaks detect must fail the build on findings (--exit-code 1)'
+assert '--config .gitleaks.toml' in script, 'gitleaks detect must pass --config .gitleaks.toml'
+print('ok')
+" "$WORKFLOW"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
+@test "repo ships a .gitleaks.toml config at root" {
+  [ -f "$GITLEAKS_CONFIG" ]
+}
+
+@test ".gitleaks.toml parses as valid TOML" {
+  python3 -c "import tomllib" 2>/dev/null || skip "tomllib not available (Python < 3.11)"
+  run python3 -c "
+import sys, tomllib
+with open(sys.argv[1], 'rb') as f:
+  tomllib.load(f)
+print('ok')
+" "$GITLEAKS_CONFIG"
   [ "$status" -eq 0 ]
   [[ "$output" == "ok" ]]
 }
