@@ -104,6 +104,8 @@ jobs:
       # for org repos and therefore failed on Dependabot PRs — those runs receive
       # no repository secrets, so the license was empty (issue #364). See
       # push-protection.md Layer 3: CI Secret Scanning.
+      # Retry the release-asset download: a single transient GitHub CDN blip must
+      # not fail the job and inflate the Fleet Monitor failure rate (issue #360).
       - name: Install gitleaks
         env:
           GITLEAKS_VERSION: "8.30.1"
@@ -113,7 +115,19 @@ jobs:
         run: |
           tarball="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
           url="https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${tarball}"
-          wget -q --https-only "${url}" -O /tmp/gitleaks.tar.gz
+          downloaded=false
+          for attempt in 1 2 3; do
+            if curl --proto '=https' -sSfL "${url}" -o /tmp/gitleaks.tar.gz; then
+              downloaded=true
+              break
+            fi
+            echo "gitleaks download attempt ${attempt} failed; retrying in $((attempt * 5))s" >&2
+            sleep "$((attempt * 5))"
+          done
+          if [ "$downloaded" != "true" ]; then
+            echo "gitleaks download failed after 3 attempts" >&2
+            exit 1
+          fi
           echo "${GITLEAKS_CHECKSUM}  /tmp/gitleaks.tar.gz" | sha256sum -c
           tar -xzf /tmp/gitleaks.tar.gz -C /usr/local/bin gitleaks
 

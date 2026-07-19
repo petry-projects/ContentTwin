@@ -151,6 +151,28 @@ print('ok')
   [[ "$output" == "ok" ]]
 }
 
+@test "gitleaks download retries on transient failure" {
+  run python3 -c "
+import sys, yaml, re
+with open(sys.argv[1], encoding='utf-8') as f:
+  wf = yaml.safe_load(f) or {}
+jobs = wf.get('jobs') or {}
+scan = jobs.get('secret-scan') or {}
+steps = scan.get('steps') or []
+install = [s for s in steps if 'gitleaks' in str(s.get('run', '')) and 'detect' not in str(s.get('run', ''))]
+assert install, 'secret-scan must have a step that installs the gitleaks CLI'
+script = '\n'.join(str(s.get('run', '')) for s in install)
+assert 'curl' in script, 'gitleaks install must download via curl'
+assert '--proto' in script, 'gitleaks curl must pass --proto to restrict protocols'
+assert '=https' in script, 'gitleaks curl --proto flag must enforce HTTPS-only redirects (=https)'
+assert re.search(r'for\s+\w+\s+in', script), 'gitleaks install must loop over multiple attempts (retry loop)'
+assert 'sleep' in script, 'gitleaks retry loop must back off between attempts (sleep)'
+print('ok')
+" "$WORKFLOW"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
 # ── License-free secret scan: must not fail on Dependabot PRs (issue #364) ─────
 
 @test "secret-scan does not depend on the licensed gitleaks-action or GITLEAKS_LICENSE" {
@@ -223,4 +245,16 @@ print('ok')
 
 @test "repo ships a .gitleaks.toml config at root" {
   [ -f "$GITLEAKS_CONFIG" ]
+}
+
+@test ".gitleaks.toml parses as valid TOML" {
+  python3 -c "import tomllib" 2>/dev/null || skip "tomllib not available (Python < 3.11)"
+  run python3 -c "
+import sys, tomllib
+with open(sys.argv[1], 'rb') as f:
+  tomllib.load(f)
+print('ok')
+" "$GITLEAKS_CONFIG"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
 }
