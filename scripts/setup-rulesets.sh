@@ -95,6 +95,9 @@ echo "Done. Ruleset '$RULESET_NAME' is active."
 # dismiss_stale_reviews_on_push MUST be true: it re-requests review after any
 # push so approvals cannot be inherited by unreviewed code (compliance: #339).
 #
+# require_code_owner_review MUST be true: changes touching CODEOWNERS-owned paths
+# require an owning reviewer's approval before merge (compliance: #338).
+#
 # Bypass actors match every ruleset targeting main (see the bypass-actors
 # standard): OrganizationAdmin plus the dependabot-automerge-petry GitHub App
 # (Integration actor_id 3167543) whose rebase workflow re-approves updated PRs.
