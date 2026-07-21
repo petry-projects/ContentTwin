@@ -6,6 +6,10 @@
 # the codified source of truth standards/rulesets/pr-quality.json
 # (compliance: issue #339, drift finding
 # ruleset-drift-pr-quality-dismiss_stale_reviews_on_push).
+#
+# It must likewise set `require_code_owner_review: true` so PRs cannot merge
+# without review from a CODEOWNERS-designated owner (compliance: issue #338,
+# drift finding ruleset-drift-pr-quality-require_code_owner_review).
 
 SCRIPT="scripts/setup-rulesets.sh"
 
@@ -88,6 +92,31 @@ with open(sys.argv[1]) as f:
 pr_rule = next(r for r in d["rules"] if r["type"] == "pull_request")
 val = pr_rule["parameters"]["dismiss_stale_reviews_on_push"]
 assert val is True, f"expected dismiss_stale_reviews_on_push true, got {val!r}"
+print("ok")
+PY
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
+# ── Drifted-parameter test (the finding in issue #338) ─────────────────────────
+
+@test "pr-quality payload sets require_code_owner_review to true" {
+  run bash "$BATS_TEST_DIRNAME/../setup-rulesets.sh"
+  [ "$status" -eq 0 ]
+
+  payload_file="$(pr_quality_payload)"
+  [ -n "$payload_file" ] || {
+    echo "No payload file captured for the pr-quality ruleset"
+    return 1
+  }
+
+  run python3 - "$payload_file" << 'PY'
+import json, sys
+with open(sys.argv[1]) as f:
+    d = json.load(f)
+pr_rule = next(r for r in d["rules"] if r["type"] == "pull_request")
+val = pr_rule["parameters"]["require_code_owner_review"]
+assert val is True, f"expected require_code_owner_review true, got {val!r}"
 print("ok")
 PY
   [ "$status" -eq 0 ]
