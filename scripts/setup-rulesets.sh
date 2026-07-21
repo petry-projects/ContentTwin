@@ -99,6 +99,9 @@ echo "Done. Ruleset '$RULESET_NAME' is active."
 # approved by someone other than its author, so a PR cannot be self-approved
 # after new commits are added (compliance: #340).
 #
+# require_code_owner_review MUST be true: PRs cannot merge without review from a
+# CODEOWNERS-designated owner (compliance: #338).
+#
 # Bypass actors match every ruleset targeting main (see the bypass-actors
 # standard): OrganizationAdmin plus the dependabot-automerge-petry GitHub App
 # (Integration actor_id 3167543) whose rebase workflow re-approves updated PRs.
