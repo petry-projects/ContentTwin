@@ -113,9 +113,11 @@ PY
   run python3 - "$payload_file" << 'PY'
 import json, sys
 with open(sys.argv[1]) as f:
-    d = json.load(f)
-pr_rule = next(r for r in d["rules"] if r["type"] == "pull_request")
-val = pr_rule["parameters"]["require_code_owner_review"]
+    d = json.load(f) or {}
+rules = d.get("rules") or []
+pr_rule = next((r for r in rules if isinstance(r, dict) and r.get("type") == "pull_request"), None)
+assert pr_rule is not None, "pull_request rule not found"
+val = pr_rule.get("parameters", {}).get("require_code_owner_review")
 assert val is True, f"expected require_code_owner_review true, got {val!r}"
 print("ok")
 PY
