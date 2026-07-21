@@ -4,7 +4,7 @@
 # converges each repo's live ruleset to the org standard. In particular the
 # `pr-quality` ruleset must set `dismiss_stale_reviews_on_push: true` and
 # `require_code_owner_review: true`, matching the codified source of truth
-# standards/rulesets/pr-quality.json (compliance: issue #339, drift finding
+# in petry-projects/.github (compliance: issue #339, drift finding
 # ruleset-drift-pr-quality-dismiss_stale_reviews_on_push; issue #338, drift
 # finding ruleset-drift-pr-quality-require_code_owner_review).
 
@@ -111,8 +111,9 @@ PY
 import json, sys
 with open(sys.argv[1]) as f:
     d = json.load(f)
-pr_rule = next(r for r in d["rules"] if r["type"] == "pull_request")
-val = pr_rule["parameters"]["require_code_owner_review"]
+pr_rule = next((r for r in d.get("rules", []) if r.get("type") == "pull_request"), None)
+assert pr_rule is not None, "pull_request rule not found"
+val = (pr_rule.get("parameters") or {}).get("require_code_owner_review")
 assert val is True, f"expected require_code_owner_review true, got {val!r}"
 print("ok")
 PY
