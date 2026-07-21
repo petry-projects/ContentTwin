@@ -22,7 +22,7 @@ setup() {
 }
 
 @test "pr-auto-review workflow is valid YAML" {
-  run python3 -c "import sys, yaml; yaml.safe_load(open(sys.argv[1]))" "$WORKFLOW"
+  run python3 -c "import sys, yaml; yaml.safe_load(open(sys.argv[1])) or {}" "$WORKFLOW"
   [ "$status" -eq 0 ]
 }
 
