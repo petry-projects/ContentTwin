@@ -29,7 +29,7 @@ setup() {
 @test "pr-auto-review stub declares no top-level concurrency block (centrally owned)" {
   run python3 -c "
 import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1]))
+wf = yaml.safe_load(open(sys.argv[1])) or {}
 assert 'concurrency' not in wf, 'caller stub must not declare its own concurrency; it is owned centrally in standards/workflows/pr-auto-review.yml'
 print('ok')
 " "$WORKFLOW"
@@ -40,7 +40,7 @@ print('ok')
 @test "pr-auto-review still delegates to the org reusable workflow" {
   run python3 -c "
 import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1]))
+wf = yaml.safe_load(open(sys.argv[1])) or {}
 job = wf['jobs']['pr-auto-review']
 uses = job.get('uses', '')
 expected = 'petry-projects/.github/.github/workflows/pr-auto-review-reusable.yml@'
