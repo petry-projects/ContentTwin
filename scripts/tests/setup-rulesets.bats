@@ -125,34 +125,9 @@ PY
   [[ "$output" == "ok" ]]
 }
 
-# ── Drifted-parameter test (the finding in issue #338) ─────────────────────────
-
-@test "pr-quality payload sets require_code_owner_review to true" {
-  run bash "$BATS_TEST_DIRNAME/../setup-rulesets.sh"
-  [ "$status" -eq 0 ]
-
-  payload_file="$(pr_quality_payload)"
-  [ -n "$payload_file" ] || {
-    echo "No payload file captured for the pr-quality ruleset"
-    return 1
-  }
-
-  run python3 - "$payload_file" << 'PY'
-import json, sys
-with open(sys.argv[1]) as f:
-    d = json.load(f) or {}
-rules = d.get("rules") or []
-pr_rule = next((r for r in rules if isinstance(r, dict) and r.get("type") == "pull_request"), None)
-assert pr_rule is not None, "pull_request rule not found"
-val = pr_rule.get("parameters", {}).get("require_code_owner_review")
-assert val is True, f"expected require_code_owner_review true, got {val!r}"
-print("ok")
-PY
-  [ "$status" -eq 0 ]
-  [[ "$output" == "ok" ]]
-}
-
 # ── Full codified-parameter coverage ──────────────────────────────────────────
+# Covers all pull_request parameters including compliance findings:
+#   issue #339 (dismiss_stale_reviews_on_push) and issue #338 (require_code_owner_review)
 
 @test "pr-quality payload matches all codified pull_request parameters" {
   run bash "$BATS_TEST_DIRNAME/../setup-rulesets.sh"
