@@ -7,7 +7,7 @@
 #   • This file is a THIN CALLER STUB. All review-dispatch logic lives in the
 #     reusable workflow above.
 #   • You MUST NOT change: the `uses:` ref — it is pinned to the
-#     `pr-review-mention/stable` channel, a moving tag advanced centrally.
+#     `pr-review-mention/v2-stable` channel, a moving tag advanced centrally.
 #     Never repoint it to `@main`, a SHA, or a frozen `@vX` (see
 #     ci-standards.md → Reusable workflow versioning). Also do not change the
 #     trigger events or the job-level `permissions:` block — reusable workflows
@@ -20,7 +20,11 @@
 #
 # PR Review Mention — thin caller for the org-level reusable.
 # To adopt: copy this file to .github/workflows/pr-review-mention.yml in your repo.
-# Requires: GH_PAT_WORKFLOWS org secret (already present in petry-projects org).
+# Requires (org secrets, already present in petry-projects org):
+#   GH_PAT_DON_PETRY     canonical PAT for API calls and dispatching the review agent.
+#                        GH_PAT_WORKFLOWS is the deprecated transition alias, kept as the
+#                        `||` fallback until the persona rename lands fleet-wide.
+#   DON_PETRY_BOT_GH_PAT PAT owned by donpetry-bot, for posting acknowledgement comments.
 name: PR Review — Mention Trigger
 
 on:
@@ -33,26 +37,11 @@ on:
 
 permissions: {}
 
-# Serialize runs on the same PR/issue conversation without cancelling in-progress
-# ones. A comment burst on one conversation (e.g. a batch of audit comments)
-# spawns many caller runs; with cancel-in-progress: true, superseding a *pending*
-# reusable-caller run — before the reusable resolves — makes GitHub record the
-# cancellation as a startup failure (0 jobs), which inflated the Fleet Monitor
-# failure rate (#333, superseding the #323 attempt). With cancel-in-progress:
-# false the superseded runs are recorded as clean `cancelled` instead. The group
-# keys on github.event_name (so distinct event types on the same conversation
-# don't cross-cancel) and the PR/issue number (so unrelated conversations don't
-# collapse — github.ref is the default branch for comment events). Mirrors the
-# fix applied to add-to-project.yml in #331.
-concurrency:
-  group: >-
-    pr-review-mention-${{ format('{0}-{1}', github.event_name,
-       github.event.issue.number || github.event.pull_request.number) }}
-  cancel-in-progress: false
-
 jobs:
   pr-review-mention:
     permissions:
       pull-requests: write
-    uses: petry-projects/.github/.github/workflows/pr-review-mention-reusable.yml@pr-review-mention/stable  # NOSONAR(githubactions:S7637) first-party channel ref
-    secrets: inherit
+    uses: petry-projects/.github/.github/workflows/pr-review-mention-reusable.yml@pr-review-mention/v2-stable  # NOSONAR(githubactions:S7637) first-party channel ref
+    secrets:
+      GH_PAT_WORKFLOWS: ${{ secrets.GH_PAT_DON_PETRY || secrets.GH_PAT_WORKFLOWS }}
+      DON_PETRY_BOT_GH_PAT: ${{ secrets.DON_PETRY_BOT_GH_PAT }}
