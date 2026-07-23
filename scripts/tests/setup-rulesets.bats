@@ -1,11 +1,15 @@
 #!/usr/bin/env bats
 # Tests for scripts/setup-rulesets.sh
-# Verifies the sanctioned rulesets are codified in-repo so `setup-rulesets.sh`
-# converges each repo's live ruleset to the org standard. In particular the
-# `pr-quality` ruleset must set `dismiss_stale_reviews_on_push: true`, matching
-# the codified source of truth standards/rulesets/pr-quality.json
+# Verifies the sanctioned rulesets match the org standard so `setup-rulesets.sh`
+# converges each repo's live ruleset. In particular the `pr-quality` ruleset
+# must set `dismiss_stale_reviews_on_push: true`, matching the codified source
+# of truth at petry-projects/.github:standards/rulesets/pr-quality.json
 # (compliance: issue #339, drift finding
 # ruleset-drift-pr-quality-dismiss_stale_reviews_on_push).
+#
+# It must likewise set `require_code_owner_review: true` so PRs cannot merge
+# without review from a CODEOWNERS-designated owner (compliance: issue #338,
+# drift finding ruleset-drift-pr-quality-require_code_owner_review).
 
 SCRIPT="scripts/setup-rulesets.sh"
 
@@ -95,6 +99,8 @@ PY
 }
 
 # ── Full codified-parameter coverage ──────────────────────────────────────────
+# Covers all pull_request parameters including compliance findings:
+#   issue #339 (dismiss_stale_reviews_on_push) and issue #338 (require_code_owner_review)
 
 @test "pr-quality payload matches all codified pull_request parameters" {
   run bash "$BATS_TEST_DIRNAME/../setup-rulesets.sh"
