@@ -1,8 +1,12 @@
 #!/usr/bin/env bats
 # Tests for .github/workflows/pr-auto-review.yml
-# Guards the concurrency fix (issue #274): superseded redundant runs on the same
-# ref must be cancelled so bot-authored PR pushes don't pile up in the
-# `action_required` state and inflate the Fleet Monitor failure rate.
+# This caller stub is a thin wrapper around the org reusable workflow. Its
+# `on:` triggers, `permissions:` grants, and `concurrency:` surface are owned
+# centrally by standards/workflows/pr-auto-review.yml and are not repo-adjustable
+# (compliance check `stub-surface-drift-pr-auto-review.yml-concurrency`, #348).
+# The canonical stub declares NO top-level `concurrency:` block, so this repo's
+# stub must not declare one either — the local #274 block was drift and has been
+# re-synced away.
 
 WORKFLOW=".github/workflows/pr-auto-review.yml"
 
@@ -18,42 +22,15 @@ setup() {
 }
 
 @test "pr-auto-review workflow is valid YAML" {
-  run python3 -c "import sys, yaml; yaml.safe_load(open(sys.argv[1]))" "$WORKFLOW"
+  run python3 -c "import sys, yaml; yaml.safe_load(open(sys.argv[1])) or {}" "$WORKFLOW"
   [ "$status" -eq 0 ]
 }
 
-@test "pr-auto-review workflow declares a concurrency block" {
+@test "pr-auto-review stub declares no top-level concurrency block (centrally owned)" {
   run python3 -c "
 import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1]))
-assert 'concurrency' in wf, 'workflow has no top-level concurrency block'
-c = wf['concurrency']
-assert isinstance(c, dict), 'concurrency must be a mapping with group/cancel-in-progress'
-assert c.get('group'), 'concurrency.group must be set'
-print('ok')
-" "$WORKFLOW"
-  [ "$status" -eq 0 ]
-  [[ "$output" == "ok" ]]
-}
-
-@test "pr-auto-review concurrency cancels in-progress runs" {
-  run python3 -c "
-import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1]))
-c = wf.get('concurrency', {})
-assert c.get('cancel-in-progress') is True, 'cancel-in-progress must be true'
-print('ok')
-" "$WORKFLOW"
-  [ "$status" -eq 0 ]
-  [[ "$output" == "ok" ]]
-}
-
-@test "pr-auto-review concurrency group is keyed per ref" {
-  run python3 -c "
-import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1]))
-group = wf.get('concurrency', {}).get('group', '')
-assert 'github.ref' in group, f'concurrency.group should key on github.ref, got: {group!r}'
+wf = yaml.safe_load(open(sys.argv[1])) or {}
+assert 'concurrency' not in wf, 'caller stub must not declare its own concurrency; it is owned centrally in standards/workflows/pr-auto-review.yml'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
@@ -63,7 +40,7 @@ print('ok')
 @test "pr-auto-review still delegates to the org reusable workflow" {
   run python3 -c "
 import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1]))
+wf = yaml.safe_load(open(sys.argv[1])) or {}
 job = wf['jobs']['pr-auto-review']
 uses = job.get('uses', '')
 expected = 'petry-projects/.github/.github/workflows/pr-auto-review-reusable.yml@'
