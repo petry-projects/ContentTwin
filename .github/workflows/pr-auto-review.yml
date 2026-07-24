@@ -44,6 +44,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: pr-auto-review-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   pr-auto-review:
     permissions:
