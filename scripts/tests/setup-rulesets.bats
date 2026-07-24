@@ -2,10 +2,11 @@
 # Tests for scripts/setup-rulesets.sh
 # Verifies the sanctioned rulesets are codified in-repo so `setup-rulesets.sh`
 # converges each repo's live ruleset to the org standard. In particular the
-# `pr-quality` ruleset must set `dismiss_stale_reviews_on_push: true`, matching
-# the codified source of truth standards/rulesets/pr-quality.json
-# (compliance: issue #339, drift finding
-# ruleset-drift-pr-quality-dismiss_stale_reviews_on_push).
+# `pr-quality` ruleset must set `dismiss_stale_reviews_on_push: true` and
+# `require_last_push_approval: true`, matching the codified source of truth
+# standards/rulesets/pr-quality.json (compliance: issue #339, drift finding
+# ruleset-drift-pr-quality-dismiss_stale_reviews_on_push; issue #340, drift
+# finding ruleset-drift-pr-quality-require_last_push_approval).
 
 SCRIPT="scripts/setup-rulesets.sh"
 
@@ -88,6 +89,31 @@ with open(sys.argv[1]) as f:
 pr_rule = next(r for r in d["rules"] if r["type"] == "pull_request")
 val = pr_rule["parameters"]["dismiss_stale_reviews_on_push"]
 assert val is True, f"expected dismiss_stale_reviews_on_push true, got {val!r}"
+print("ok")
+PY
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
+# ── Drifted-parameter test (the finding in issue #340) ─────────────────────────
+
+@test "pr-quality payload sets require_last_push_approval to true" {
+  run bash "$BATS_TEST_DIRNAME/../setup-rulesets.sh"
+  [ "$status" -eq 0 ]
+
+  payload_file="$(pr_quality_payload)"
+  [ -n "$payload_file" ] || {
+    echo "No payload file captured for the pr-quality ruleset"
+    return 1
+  }
+
+  run python3 - "$payload_file" << 'PY'
+import json, sys
+with open(sys.argv[1]) as f:
+    d = json.load(f)
+pr_rule = next(r for r in d["rules"] if r["type"] == "pull_request")
+val = pr_rule["parameters"]["require_last_push_approval"]
+assert val is True, f"expected require_last_push_approval true, got {val!r}"
 print("ok")
 PY
   [ "$status" -eq 0 ]
