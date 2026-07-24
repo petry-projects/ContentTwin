@@ -111,8 +111,9 @@ PY
 import json, sys
 with open(sys.argv[1]) as f:
     d = json.load(f)
-pr_rule = next(r for r in d["rules"] if r["type"] == "pull_request")
-val = pr_rule["parameters"]["require_last_push_approval"]
+pr_rule = next((r for r in d.get("rules", []) if r.get("type") == "pull_request"), None)
+assert pr_rule is not None, "pull_request rule not found"
+val = (pr_rule.get("parameters") or {}).get("require_last_push_approval")
 assert val is True, f"expected require_last_push_approval true, got {val!r}"
 print("ok")
 PY
