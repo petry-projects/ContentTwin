@@ -23,7 +23,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Lint shell scripts
         run: |
@@ -37,7 +37,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Retry the release-asset download: a single transient GitHub CDN blip must
       # not fail the job and inflate the Fleet Monitor failure rate (issue #360).
@@ -66,7 +66,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Retry the apt mirror update+install: a transient mirror 5xx/timeout must
       # not fail the job and inflate the Fleet Monitor failure rate (issue #360).
@@ -95,7 +95,7 @@ jobs:
       - name: Checkout (full history)
         # Pin to SHA per Action Pinning Policy (ci-standards.md#action-pinning-policy).
         # Look up current SHA: gh api repos/actions/checkout/git/refs/tags/v4 --jq '.object.sha'
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
