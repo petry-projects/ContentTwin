@@ -12,7 +12,7 @@
 #     worked for pr-review-mention #333 / add-to-project #331, but here would
 #     fight the reusable's centralised per-issue/per-PR lanes and re-inflate the
 #     rate), or
-#   • letting `uses:`/`agent_ref` fall off the moving `dev-lead/stable` channel
+#   • letting `uses:`/`agent_ref` fall off the moving `dev-lead/v1-stable` channel
 #     (cf. add-to-project #330, where a stale channel pin failed to resolve and
 #     runs died at startup with zero jobs, recorded as failures).
 # This guard locks those invariants so a future well-meaning edit can't silently
@@ -108,27 +108,27 @@ print('ok')
   [[ "$output" == "ok" ]]
 }
 
-@test "dev-lead uses: pins the org reusable at the dev-lead/stable channel (not @main or a SHA)" {
+@test "dev-lead uses: pins the org reusable at the dev-lead/v1-stable channel (not @main or a SHA)" {
   run python3 -c "
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1])) or {}
 job = (wf.get('jobs') or {}).get('dev-lead') or {}
 uses = job.get('uses', '')
-expected = 'petry-projects/.github-private/.github/workflows/dev-lead-reusable.yml@dev-lead/stable'
-assert uses == expected, f'uses: must pin the dev-lead/stable channel, got: {uses!r}'
+expected = 'petry-projects/.github-private/.github/workflows/dev-lead-reusable.yml@dev-lead/v1-stable'
+assert uses == expected, f'uses: must pin the dev-lead/v1-stable channel, got: {uses!r}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
   [[ "$output" == "ok" ]]
 }
 
-@test "dev-lead agent_ref matches the uses: channel (both dev-lead/stable)" {
+@test "dev-lead agent_ref matches the uses: channel (both dev-lead/v1-stable)" {
   run python3 -c "
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1])) or {}
 job = (wf.get('jobs') or {}).get('dev-lead') or {}
 agent_ref = (job.get('with') or {}).get('agent_ref', '')
-assert agent_ref == 'dev-lead/stable', f'agent_ref must be dev-lead/stable, got: {agent_ref!r}'
+assert agent_ref == 'dev-lead/v1-stable', f'agent_ref must be dev-lead/v1-stable, got: {agent_ref!r}'
 uses = job.get('uses', '')
 uses_channel = uses.rsplit('@', 1)[-1] if '@' in uses else ''
 assert uses_channel == agent_ref, f'uses: channel ({uses_channel!r}) must equal agent_ref ({agent_ref!r})'
