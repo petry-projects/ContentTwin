@@ -94,15 +94,19 @@ print('ok')
   [[ "$output" == "ok" ]]
 }
 
-@test "pr-review-mention still delegates to the org reusable at the stable channel" {
+@test "pr-review-mention still delegates to the org reusable at the v2-stable channel" {
+  # Must pin the major-scoped channel @pr-review-mention/v2-stable, not the bare
+  # tier @pr-review-mention/stable. The org standard (ci-standards.md →
+  # centralization tiers) treats a bare tier pin as drift; the canonical stub
+  # delegates to ...@pr-review-mention/v<M>-stable (#401).
   run python3 -c "
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1])) or {}
 jobs = wf.get('jobs') or {}
 job = jobs.get('pr-review-mention') or {}
 uses = job.get('uses', '')
-expected = 'petry-projects/.github/.github/workflows/pr-review-mention-reusable.yml@pr-review-mention/stable'
-assert uses == expected, f'job must call the org reusable at the stable channel, got: {uses!r}'
+expected = 'petry-projects/.github/.github/workflows/pr-review-mention-reusable.yml@pr-review-mention/v2-stable'
+assert uses == expected, f'job must call the org reusable at the v2-stable channel, got: {uses!r}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
