@@ -140,7 +140,12 @@ with open(sys.argv[1], encoding='utf-8') as f:
 jobs = wf.get('jobs') or {}
 format_job = jobs.get('format') or {}
 steps = format_job.get('steps') or []
-install = [s for s in steps if 'curl' in str(s.get('run', '')) and 'shfmt' in str(s.get('run', ''))]
+install = []
+for s in steps:
+  if isinstance(s, dict):
+    run = str(s.get('run', ''))
+    if 'curl' in run and 'shfmt' in run:
+      install.append(s)
 assert install, 'format job must have a step that downloads shfmt via curl'
 env = {}
 for s in install:
@@ -149,6 +154,14 @@ checksum = env.get('SHFMT_CHECKSUM')
 assert checksum, 'shfmt install must pin a SHFMT_CHECKSUM so a corrupted download is detected'
 script = '\n'.join(str(s.get('run', '')) for s in install)
 assert 'sha256sum -c' in script, 'shfmt binary must be verified with sha256sum -c before use'
+checksum_pos = script.index('sha256sum -c')
+install_pos = script.index('install -m 0755')
+assert checksum_pos < install_pos, 'checksum validation must precede installation'
+assert re.search(
+  r'if\s+curl\b.*?sha256sum -c;\s+then\s+.*?install\b',
+  script,
+  re.DOTALL,
+), 'installation must remain in the successful verification branch'
 # The verification must sit inside the retry loop so a truncated HTTP-200 body
 # triggers a retry rather than a hard job failure (issue #410).
 body = re.search(r'\bdo\b(.*)\bdone\b', script, re.DOTALL)
