@@ -88,10 +88,10 @@ import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1])) or {}
 job = (wf.get('jobs') or {}).get('ideate') or {}
 uses = job.get('uses', '')
-expected = 'petry-projects/.github/.github/workflows/feature-ideation-reusable.yml@feature-ideation/stable'
+expected = 'petry-projects/.github/.github/workflows/feature-ideation-reusable.yml@feature-ideation/v1-stable'
 assert uses == expected, f'ideate must call the org reusable workflow on the stable channel, got: {uses!r}'
 print(uses)
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
-  [[ "$output" == petry-projects/.github/.github/workflows/feature-ideation-reusable.yml@feature-ideation/stable ]]
+  [[ "$output" == petry-projects/.github/.github/workflows/feature-ideation-reusable.yml@feature-ideation/v1-stable ]]
 }
