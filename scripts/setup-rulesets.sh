@@ -150,7 +150,6 @@ else
   printf '%s\n' "$PR_QUALITY_PAYLOAD" | gh api "repos/$REPO/rulesets" -X POST --input -
 fi
 
-
 echo "Done. Ruleset '$PR_QUALITY_NAME' is active."
 
 # ── dependabot security updates ──────────────────────────────────────────────

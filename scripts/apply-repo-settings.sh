@@ -16,7 +16,6 @@ if [ -n "${GH_PAT:-}" ]; then
   export GH_TOKEN="$GH_PAT"
 fi
 
-
 echo "Applying security and analysis settings for: $REPO"
 
 # ── Required security_and_analysis settings ───────────────────────────────────
@@ -193,6 +192,5 @@ else
   echo "  [ERROR] approval_policy: $POLICY (expected: $EXPECTED_APPROVAL_POLICY)" >&2
   exit 1
 fi
-
 
 echo "Done."
