@@ -23,7 +23,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Lint shell scripts
         run: |
@@ -37,16 +37,25 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Retry the release-asset download: a single transient GitHub CDN blip must
       # not fail the job and inflate the Fleet Monitor failure rate (issue #360).
+      # Verify the download against a pinned SHA256 inside the retry loop so a
+      # truncated HTTP-200 body (a corrupt CDN response that curl exits 0 on) is
+      # retried instead of running a broken shfmt and hard-failing the job (#410).
       - name: Install shfmt
+        env:
+          SHFMT_VERSION: "3.10.0"
+          # Named SHFMT_CHECKSUM (not SHFMT_SHA256) — SonarCloud flags env var names
+          # matching *SHA256* containing hex strings as Security Hotspots (false positive).
+          SHFMT_CHECKSUM: "1f57a384d59542f8fac5f503da1f3ea44242f46dff969569e80b524d64b71dbc"
         run: |
+          url="https://github.com/mvdan/sh/releases/download/v${SHFMT_VERSION}/shfmt_v${SHFMT_VERSION}_linux_amd64"
           for attempt in 1 2 3; do
-            if curl --proto '=https' -sSfL https://github.com/mvdan/sh/releases/download/v3.10.0/shfmt_v3.10.0_linux_amd64 \
-              -o /usr/local/bin/shfmt; then
-              chmod +x /usr/local/bin/shfmt
+            if curl --proto '=https' -sSfL "${url}" -o /tmp/shfmt \
+              && echo "${SHFMT_CHECKSUM}  /tmp/shfmt" | sha256sum -c; then
+              install -m 0755 /tmp/shfmt /usr/local/bin/shfmt
               exit 0
             fi
             echo "shfmt download attempt ${attempt} failed; retrying in $((attempt * 5))s" >&2
@@ -66,7 +75,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Retry the apt mirror update+install: a transient mirror 5xx/timeout must
       # not fail the job and inflate the Fleet Monitor failure rate (issue #360).
@@ -95,7 +104,7 @@ jobs:
       - name: Checkout (full history)
         # Pin to SHA per Action Pinning Policy (ci-standards.md#action-pinning-policy).
         # Look up current SHA: gh api repos/actions/checkout/git/refs/tags/v4 --jq '.object.sha'
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
 
