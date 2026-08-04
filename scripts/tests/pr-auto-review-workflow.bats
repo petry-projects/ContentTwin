@@ -62,7 +62,13 @@ print('ok')
 
 @test "pr-auto-review workflow has no unresolved TODO comment (S1135)" {
   run grep -nE '(^|[[:space:]])#[[:space:]]*TODO' "$WORKFLOW"
-  [ "$status" -ne 0 ]
+  if [ "$status" -eq 0 ]; then
+    echo "Found TODO(s):" >&2
+    echo "$output" >&2
+    return 1
+  fi
+  # grep returns 1 when no matches were found
+  [ "$status" -eq 1 ]
 }
 
 @test "pr-auto-review workflow_run targets real CI workflow name(s)" {
