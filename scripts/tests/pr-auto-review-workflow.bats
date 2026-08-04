@@ -60,6 +60,35 @@ print('ok')
   [[ "$output" == "ok" ]]
 }
 
+@test "pr-auto-review workflow has no unresolved TODO comment (S1135)" {
+  run grep -nE '(^|[[:space:]])#[[:space:]]*TODO' "$WORKFLOW"
+  [ "$status" -ne 0 ]
+}
+
+@test "pr-auto-review workflow_run targets real CI workflow name(s)" {
+  run python3 -c "
+import sys, glob, os, yaml
+
+wf = yaml.safe_load(open(sys.argv[1]))
+# PyYAML parses the bare 'on:' key as boolean True.
+on = wf.get('on', wf.get(True, {}))
+targets = on.get('workflow_run', {}).get('workflows', [])
+assert targets, 'workflow_run.workflows must list at least one workflow name'
+
+names = set()
+for path in glob.glob('.github/workflows/*.yml'):
+    doc = yaml.safe_load(open(path))
+    if isinstance(doc, dict) and doc.get('name'):
+        names.add(doc['name'])
+
+missing = [t for t in targets if t not in names]
+assert not missing, f'workflow_run.workflows names not found in repo: {missing!r}'
+print('ok')
+" "$WORKFLOW"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
 @test "pr-auto-review still delegates to the org reusable workflow" {
   run python3 -c "
 import sys, yaml
