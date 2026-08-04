@@ -69,15 +69,15 @@ print('ok')
   run python3 -c "
 import sys, glob, os, yaml
 
-wf = yaml.safe_load(open(sys.argv[1]))
+wf = yaml.safe_load(open(sys.argv[1])) or {}
 # PyYAML parses the bare 'on:' key as boolean True.
-on = wf.get('on', wf.get(True, {}))
-targets = on.get('workflow_run', {}).get('workflows', [])
+on = wf.get('on') or wf.get(True) or {}
+targets = (on.get('workflow_run') or {}).get('workflows', [])
 assert targets, 'workflow_run.workflows must list at least one workflow name'
 
 names = set()
 for path in glob.glob('.github/workflows/*.yml'):
-    doc = yaml.safe_load(open(path))
+    doc = yaml.safe_load(open(path)) or {}
     if isinstance(doc, dict) and doc.get('name'):
         names.add(doc['name'])
 
