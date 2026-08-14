@@ -43,7 +43,8 @@ setup() {
   run python3 -c "
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1])) or {}
-assert 'concurrency' not in wf, f'stub must not declare a local concurrency block (centrally owned), got: {wf.get(\"concurrency\")!r}'
+concurrency = wf.get('concurrency')
+assert 'concurrency' not in wf, f'stub must not declare a local concurrency block (centrally owned), got: {concurrency!r}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
