@@ -27,18 +27,23 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "pr-auto-review declares NO per-repo concurrency block (concurrency is centralised in the reusable)" {
+@test "pr-auto-review declares NO per-repo concurrency block at any level (concurrency is centralised in the reusable)" {
   # `concurrency:` is a centrally-owned surface for Tier-1 stubs
   # (ci-standards.md#centralization-tiers); the canonical
   # standards/workflows/pr-auto-review.yml carries none. A per-repo block drifts
   # the stub from canonical (the compliance finding in issue #405) and would
   # fight the reusable's centralised grouping. If cancel-superseded-runs
   # behaviour is needed, it belongs in the reusable, not here.
+  # Job-level concurrency is also prohibited: GitHub permits concurrency: under
+  # individual jobs on reusable-workflow callers, so we must check both levels.
   run python3 -c "
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1])) or {}
 concurrency = wf.get('concurrency')
 assert 'concurrency' not in wf, f'pr-auto-review stub must not add a concurrency block (it is centralised in the reusable), got: {concurrency!r}'
+for job_id, job_cfg in (wf.get('jobs') or {}).items():
+    job_conc = (job_cfg or {}).get('concurrency')
+    assert 'concurrency' not in (job_cfg or {}), f'job {job_id!r} must not add a per-job concurrency block, got: {job_conc!r}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
