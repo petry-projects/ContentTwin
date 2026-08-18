@@ -72,26 +72,11 @@ print('ok')
   [[ "$output" == "ok" ]]
 }
 
-@test "concurrency group is defined" {
+@test "no caller-local concurrency block (delegated to reusable)" {
   run python3 -c "
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1]))
-assert 'concurrency' in wf, 'workflow has no top-level concurrency block'
-c = wf['concurrency']
-assert isinstance(c, dict), 'concurrency must be a mapping'
-assert c.get('group'), 'concurrency.group must be set'
-print('ok')
-" "$WORKFLOW"
-  [ "$status" -eq 0 ]
-  [[ "$output" == "ok" ]]
-}
-
-@test "concurrency cancels superseded in-progress runs" {
-  run python3 -c "
-import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1]))
-c = wf.get('concurrency', {})
-assert c.get('cancel-in-progress') is True, 'cancel-in-progress must be true'
+assert 'concurrency' not in wf, 'stub must not define a caller-local concurrency block — concurrency is owned by the reusable workflow'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
