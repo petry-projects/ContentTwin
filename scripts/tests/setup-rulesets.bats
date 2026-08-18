@@ -7,6 +7,10 @@
 # petry-projects/.github:standards/rulesets/pr-quality.json (compliance: issues #339 and #388, drift
 # finding ruleset-drift-pr-quality-dismiss_stale_reviews_on_push; issue #340,
 # drift finding ruleset-drift-pr-quality-require_last_push_approval).
+#
+# It must likewise set `require_code_owner_review: true` so PRs cannot merge
+# without review from a CODEOWNERS-designated owner (compliance: issue #338,
+# drift finding ruleset-drift-pr-quality-require_code_owner_review).
 
 SCRIPT="scripts/setup-rulesets.sh"
 
@@ -122,6 +126,8 @@ PY
 }
 
 # ── Full codified-parameter coverage ──────────────────────────────────────────
+# Covers all pull_request parameters including compliance findings:
+#   issue #339 (dismiss_stale_reviews_on_push) and issue #338 (require_code_owner_review)
 
 @test "pr-quality payload matches all codified pull_request parameters" {
   run bash "$BATS_TEST_DIRNAME/../setup-rulesets.sh"
