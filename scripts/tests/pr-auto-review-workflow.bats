@@ -1,8 +1,13 @@
 #!/usr/bin/env bats
 # Tests for .github/workflows/pr-auto-review.yml
-# Guards the concurrency fix (issue #274): superseded redundant runs on the same
-# ref must be cancelled so bot-authored PR pushes don't pile up in the
-# `action_required` state and inflate the Fleet Monitor failure rate.
+# pr-auto-review.yml is a Tier-1 thin caller stub: its behaviour lives in the org
+# reusable (pr-auto-review-reusable.yml) and its `on:`, `permissions:` and
+# `concurrency:` surfaces are centrally owned and NOT repo-adjustable
+# (ci-standards.md#centralization-tiers). Adding a per-repo `concurrency:` block
+# is drift, not a repo-specific liberty — the canonical
+# `standards/workflows/pr-auto-review.yml` carries none. This guard locks that
+# invariant (issue #405) so a future well-meaning edit can't re-introduce the
+# drift the earlier `#274` block represented. Mirrors dev-lead-workflow.bats.
 
 WORKFLOW=".github/workflows/pr-auto-review.yml"
 
@@ -22,38 +27,23 @@ setup() {
   [ "$status" -eq 0 ]
 }
 
-@test "pr-auto-review workflow declares a concurrency block" {
+@test "pr-auto-review declares NO per-repo concurrency block at any level (concurrency is centralised in the reusable)" {
+  # `concurrency:` is a centrally-owned surface for Tier-1 stubs
+  # (ci-standards.md#centralization-tiers); the canonical
+  # standards/workflows/pr-auto-review.yml carries none. A per-repo block drifts
+  # the stub from canonical (the compliance finding in issue #405) and would
+  # fight the reusable's centralised grouping. If cancel-superseded-runs
+  # behaviour is needed, it belongs in the reusable, not here.
+  # Job-level concurrency is also prohibited: GitHub permits concurrency: under
+  # individual jobs on reusable-workflow callers, so we must check both levels.
   run python3 -c "
 import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1]))
-assert 'concurrency' in wf, 'workflow has no top-level concurrency block'
-c = wf['concurrency']
-assert isinstance(c, dict), 'concurrency must be a mapping with group/cancel-in-progress'
-assert c.get('group'), 'concurrency.group must be set'
-print('ok')
-" "$WORKFLOW"
-  [ "$status" -eq 0 ]
-  [[ "$output" == "ok" ]]
-}
-
-@test "pr-auto-review concurrency cancels in-progress runs" {
-  run python3 -c "
-import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1]))
-c = wf.get('concurrency', {})
-assert c.get('cancel-in-progress') is True, 'cancel-in-progress must be true'
-print('ok')
-" "$WORKFLOW"
-  [ "$status" -eq 0 ]
-  [[ "$output" == "ok" ]]
-}
-
-@test "pr-auto-review concurrency group is keyed per ref" {
-  run python3 -c "
-import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1]))
-group = wf.get('concurrency', {}).get('group', '')
-assert 'github.ref' in group, f'concurrency.group should key on github.ref, got: {group!r}'
+wf = yaml.safe_load(open(sys.argv[1])) or {}
+concurrency = wf.get('concurrency')
+assert 'concurrency' not in wf, f'pr-auto-review stub must not add a concurrency block (it is centralised in the reusable), got: {concurrency!r}'
+for job_id, job_cfg in (wf.get('jobs') or {}).items():
+    job_conc = (job_cfg or {}).get('concurrency')
+    assert 'concurrency' not in (job_cfg or {}), f'job {job_id!r} must not add a per-job concurrency block, got: {job_conc!r}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
