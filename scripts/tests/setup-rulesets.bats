@@ -5,8 +5,8 @@
 # `pr-quality` ruleset must set `dismiss_stale_reviews_on_push: true` and
 # `require_last_push_approval: true`, matching the codified source of truth
 # petry-projects/.github:standards/rulesets/pr-quality.json (compliance: issues #339 and #388, drift
-# finding ruleset-drift-pr-quality-dismiss_stale_reviews_on_push; issue #340,
-# drift finding ruleset-drift-pr-quality-require_last_push_approval).
+# finding ruleset-drift-pr-quality-dismiss_stale_reviews_on_push; issues #340
+# and #400, drift finding ruleset-drift-pr-quality-require_last_push_approval).
 #
 # It must likewise set `require_code_owner_review: true` so PRs cannot merge
 # without review from a CODEOWNERS-designated owner (compliance: issue #338,
@@ -99,7 +99,7 @@ PY
   [[ "$output" == "ok" ]]
 }
 
-# ── Drifted-parameter test (the finding in issue #340) ─────────────────────────
+# ── Drifted-parameter test (the finding in issues #340 and #400) ───────────────
 
 @test "pr-quality payload sets require_last_push_approval to true" {
   run bash "$BATS_TEST_DIRNAME/../setup-rulesets.sh"
