@@ -82,7 +82,8 @@ print('ok')
   # follow-up traffic. A per-repo concurrency block would drift the stub and
   # fight the centralised grouping — re-inflating the failure/cancellation rate.
   # This is the one point where dev-lead deliberately diverges from the
-  # add-to-project / pr-review-mention stubs (which DO carry a concurrency block).
+  # add-to-project stub (which carries a concurrency block); pr-review-mention
+  # no longer carries one either after issue #404 re-synced it to the central standard.
   run python3 -c "
 import sys, yaml
 wf = yaml.safe_load(open(sys.argv[1])) or {}
