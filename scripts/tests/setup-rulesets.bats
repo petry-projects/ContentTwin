@@ -125,6 +125,64 @@ PY
   [[ "$output" == "ok" ]]
 }
 
+# ── Existing-ruleset update path (PUT) ────────────────────────────────────────
+# The default mock returns an empty lookup so the script POSTs a new ruleset.
+# This test instead returns an existing id so the script takes the update (PUT)
+# branch, guarding against a regression that drops require_last_push_approval
+# when converging a live ruleset on a real repository (issues #340 and #400).
+
+@test "pr-quality PUT payload sets require_last_push_approval to true when ruleset exists" {
+  # Override the mock so the ruleset-existence lookup returns an id, forcing the
+  # update (PUT) branch instead of create (POST).
+  cat > "$MOCK_BIN/gh" << 'MOCK'
+#!/usr/bin/env bash
+set -euo pipefail
+echo "$*" >> "$CALLS_FILE"
+
+if [[ " $* " == *" --input - "* ]]; then
+  payload_file="$(mktemp "$PAYLOAD_DIR/payload.XXXXXX")"
+  cat > "$payload_file"
+  echo '{}'
+elif [[ "$*" == *--jq* ]]; then
+  # Ruleset lookup — return a non-empty id so the script updates (PUT) the
+  # existing ruleset instead of creating it.
+  printf '424242'
+else
+  echo '{}'
+fi
+MOCK
+  chmod +x "$MOCK_BIN/gh"
+
+  run bash "$BATS_TEST_DIRNAME/../setup-rulesets.sh"
+  [ "$status" -eq 0 ]
+
+  # The existing ruleset must be converged via PUT against its id, not POST.
+  grep -q "rulesets/424242 -X PUT" "$CALLS_FILE" || {
+    echo "Expected a PUT to the existing ruleset id; calls were:"
+    cat "$CALLS_FILE"
+    return 1
+  }
+
+  payload_file="$(pr_quality_payload)"
+  [ -n "$payload_file" ] || {
+    echo "No payload file captured for the pr-quality ruleset"
+    return 1
+  }
+
+  run python3 - "$payload_file" << 'PY'
+import json, sys
+with open(sys.argv[1]) as f:
+    d = json.load(f)
+pr_rule = next((r for r in d.get("rules", []) if r.get("type") == "pull_request"), None)
+assert pr_rule is not None, "pull_request rule not found"
+val = (pr_rule.get("parameters") or {}).get("require_last_push_approval")
+assert val is True, f"expected require_last_push_approval true, got {val!r}"
+print("ok")
+PY
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
 # ── Full codified-parameter coverage ──────────────────────────────────────────
 # Covers all pull_request parameters including compliance findings:
 #   issue #339 (dismiss_stale_reviews_on_push) and issue #338 (require_code_owner_review)
