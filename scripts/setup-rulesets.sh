@@ -97,7 +97,9 @@ echo "Done. Ruleset '$RULESET_NAME' is active."
 #
 # require_last_push_approval MUST be true: it forces the most recent push to be
 # approved by someone other than its author, so a PR cannot be self-approved
-# after new commits are added (compliance: #340).
+# after new commits are added — except by the bypass actors documented below,
+# who retain an `always` bypass over the entire pull-request rule (compliance:
+# #340, re-detected #400).
 #
 # require_code_owner_review MUST be true: PRs cannot merge without review from a
 # CODEOWNERS-designated owner (compliance: #338).
