@@ -189,8 +189,13 @@ PY
 # already-present ruleset (compliance: issue #339, re-detected #388 and #418).
 
 @test "pr-quality PUT payload sets dismiss_stale_reviews_on_push to true when ruleset exists" {
-  # Override the mock so the ruleset-existence lookup returns an id, forcing the
-  # update (PUT) branch instead of create (POST).
+  # Override the mock so ONLY the pr-quality existence lookup returns an id,
+  # forcing pr-quality down the update (PUT) branch while code-quality stays on
+  # create (POST). Keeping the two rulesets on different paths means a regression
+  # that PUTs code-quality but POSTs pr-quality can no longer pass. Each captured
+  # payload gets a sidecar recording the exact request args that carried it, so
+  # the assertion can tie the pr-quality payload to its own PUT — not merely to
+  # "some" PUT that a different ruleset might have made.
   cat > "$MOCK_BIN/gh" << 'MOCK'
 #!/usr/bin/env bash
 set -euo pipefail
@@ -199,11 +204,19 @@ echo "$*" >> "$CALLS_FILE"
 if [[ " $* " == *" --input - "* ]]; then
   payload_file="$(mktemp "$PAYLOAD_DIR/payload.XXXXXX")"
   cat > "$payload_file"
+  # Record the request args (method + target) that carried this payload so the
+  # test can associate a payload with the exact API call that sent it.
+  printf '%s' "$*" > "$payload_file.args"
   echo '{}'
 elif [[ "$*" == *--jq* ]]; then
-  # Ruleset lookup — return a non-empty id so the script updates (PUT) the
-  # existing ruleset instead of creating it.
-  printf '424242'
+  # Ruleset-existence lookup. Return a non-empty id ONLY for pr-quality so it
+  # takes the update (PUT) branch; code-quality gets an empty result and takes
+  # the create (POST) branch.
+  if [[ "$*" == *pr-quality* ]]; then
+    printf '424242'
+  else
+    printf ''
+  fi
 else
   echo '{}'
 fi
@@ -213,16 +226,18 @@ MOCK
   run bash "$BATS_TEST_DIRNAME/../setup-rulesets.sh"
   [ "$status" -eq 0 ]
 
-  # The existing ruleset must be converged via PUT against its id, not POST.
-  grep -q "rulesets/424242 -X PUT" "$CALLS_FILE" || {
-    echo "Expected a PUT to the existing ruleset id; calls were:"
-    cat "$CALLS_FILE"
-    return 1
-  }
-
   payload_file="$(pr_quality_payload)"
   [ -n "$payload_file" ] || {
     echo "No payload file captured for the pr-quality ruleset"
+    return 1
+  }
+
+  # The pr-quality payload itself must have been converged via PUT against the
+  # existing ruleset id — tie the payload to its own request, not to "some" PUT
+  # a different ruleset (e.g. code-quality) may have made.
+  grep -q "rulesets/424242 -X PUT" "$payload_file.args" || {
+    echo "Expected the pr-quality payload to be sent via PUT to the existing id; its request was:"
+    cat "$payload_file.args"
     return 1
   }
 
