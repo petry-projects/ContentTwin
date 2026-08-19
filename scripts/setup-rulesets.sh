@@ -93,7 +93,8 @@ echo "Done. Ruleset '$RULESET_NAME' is active."
 #   standards/github-settings.md#pr-quality--standard-ruleset-all-repositories
 #
 # dismiss_stale_reviews_on_push MUST be true: it re-requests review after any
-# push so approvals cannot be inherited by unreviewed code (compliance: #339).
+# push so approvals cannot be inherited by unreviewed code (compliance: #339,
+# re-detected #388, #418).
 #
 # require_last_push_approval MUST be true: it forces the most recent push to be
 # approved by someone other than its author, so a PR cannot be self-approved

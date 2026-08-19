@@ -4,7 +4,7 @@
 # converges each repo's live ruleset to the org standard. In particular the
 # `pr-quality` ruleset must set `dismiss_stale_reviews_on_push: true` and
 # `require_last_push_approval: true`, matching the codified source of truth
-# petry-projects/.github:standards/rulesets/pr-quality.json (compliance: issues #339 and #388, drift
+# petry-projects/.github:standards/rulesets/pr-quality.json (compliance: issues #339, #388, and #418, drift
 # finding ruleset-drift-pr-quality-dismiss_stale_reviews_on_push; issues #340
 # and #400, drift finding ruleset-drift-pr-quality-require_last_push_approval).
 #
@@ -177,6 +177,78 @@ pr_rule = next((r for r in d.get("rules", []) if r.get("type") == "pull_request"
 assert pr_rule is not None, "pull_request rule not found"
 val = (pr_rule.get("parameters") or {}).get("require_last_push_approval")
 assert val is True, f"expected require_last_push_approval true, got {val!r}"
+print("ok")
+PY
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
+# ── Existing-ruleset update path (PUT) — dismiss_stale_reviews_on_push ─────────
+# Converging a live repo takes the update (PUT) branch. This guards against a
+# regression that drops dismiss_stale_reviews_on_push when converging an
+# already-present ruleset (compliance: issue #339, re-detected #388 and #418).
+
+@test "pr-quality PUT payload sets dismiss_stale_reviews_on_push to true when ruleset exists" {
+  # Override the mock so ONLY the pr-quality existence lookup returns an id,
+  # forcing pr-quality down the update (PUT) branch while code-quality stays on
+  # create (POST). Keeping the two rulesets on different paths means a regression
+  # that PUTs code-quality but POSTs pr-quality can no longer pass. Each captured
+  # payload gets a sidecar recording the exact request args that carried it, so
+  # the assertion can tie the pr-quality payload to its own PUT — not merely to
+  # "some" PUT that a different ruleset might have made.
+  cat > "$MOCK_BIN/gh" << 'MOCK'
+#!/usr/bin/env bash
+set -euo pipefail
+echo "$*" >> "$CALLS_FILE"
+
+if [[ " $* " == *" --input - "* ]]; then
+  payload_file="$(mktemp "$PAYLOAD_DIR/payload.XXXXXX")"
+  cat > "$payload_file"
+  # Record the request args (method + target) that carried this payload so the
+  # test can associate a payload with the exact API call that sent it.
+  printf '%s' "$*" > "$payload_file.args"
+  echo '{}'
+elif [[ "$*" == *--jq* ]]; then
+  # Ruleset-existence lookup. Return a non-empty id ONLY for pr-quality so it
+  # takes the update (PUT) branch; code-quality gets an empty result and takes
+  # the create (POST) branch.
+  if [[ "$*" == *pr-quality* ]]; then
+    printf '424242'
+  else
+    printf ''
+  fi
+else
+  echo '{}'
+fi
+MOCK
+  chmod +x "$MOCK_BIN/gh"
+
+  run bash "$BATS_TEST_DIRNAME/../setup-rulesets.sh"
+  [ "$status" -eq 0 ]
+
+  payload_file="$(pr_quality_payload)"
+  [ -n "$payload_file" ] || {
+    echo "No payload file captured for the pr-quality ruleset"
+    return 1
+  }
+
+  # The pr-quality payload itself must have been converged via PUT against the
+  # existing ruleset id — tie the payload to its own request, not to "some" PUT
+  # a different ruleset (e.g. code-quality) may have made.
+  grep -q "rulesets/424242 -X PUT" "$payload_file.args" || {
+    echo "Expected the pr-quality payload to be sent via PUT to the existing id; its request was:"
+    cat "$payload_file.args"
+    return 1
+  }
+
+  run python3 - "$payload_file" << 'PY'
+import json, sys
+with open(sys.argv[1]) as f:
+    d = json.load(f)
+pr_rule = next((r for r in d.get("rules", []) if r.get("type") == "pull_request"), None)
+assert pr_rule is not None, "pull_request rule not found"
+val = (pr_rule.get("parameters") or {}).get("dismiss_stale_reviews_on_push")
+assert val is True, f"expected dismiss_stale_reviews_on_push true, got {val!r}"
 print("ok")
 PY
   [ "$status" -eq 0 ]
