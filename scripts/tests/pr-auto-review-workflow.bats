@@ -47,16 +47,43 @@ setup() {
   # is drift. Concurrency must live at the TOP level, not per-job, so we also assert
   # no job introduces its own block.
   run python3 -c "
-import sys, yaml
+import sys, yaml, re
 wf = yaml.safe_load(open(sys.argv[1])) or {}
 c = wf.get('concurrency')
 assert isinstance(c, dict), f'pr-auto-review stub must carry a top-level concurrency block synced from canonical, got: {c!r}'
-group = c.get('group', '')
-assert 'pr-auto-review-ready-check-pr-' in group, f'concurrency.group must key check_suite/workflow_run runs per PR, got: {group!r}'
-assert 'pr-auto-review-ready-check-unique-' in group and 'github.run_id' in group, f'concurrency.group must fall back to a unique-per-run group, got: {group!r}'
-cip = c.get('cancel-in-progress', '')
-assert isinstance(cip, str) and \"github.event_name == 'check_suite'\" in cip and \"github.event_name == 'workflow_run'\" in cip, \\
-    f'cancel-in-progress must be the canonical event-gated expression, got: {cip!r}'
+
+def strip_expr(s):
+    # Strip ${{ ... }} wrapper if present, then normalize whitespace
+    s = s.strip()
+    if s.startswith('\${{') and s.endswith('}}'):
+        s = s[3:-2].strip()
+    return ' '.join(s.split())
+
+# Canonical group expression from petry-projects/.github#1126
+canonical_group = (
+    \"(github.event_name == 'check_suite' && github.event.check_suite.pull_requests[0].number) \"
+    \"&& format('pr-auto-review-ready-check-pr-{0}', github.event.check_suite.pull_requests[0].number) \"
+    \"|| (github.event_name == 'workflow_run' && github.event.workflow_run.pull_requests[0].number) \"
+    \"&& format('pr-auto-review-ready-check-pr-{0}', github.event.workflow_run.pull_requests[0].number) \"
+    \"|| format('pr-auto-review-ready-check-unique-{0}', github.run_id)\"
+)
+
+# Canonical cancel-in-progress expression
+canonical_cip = \"github.event_name == 'check_suite' || github.event_name == 'workflow_run'\"
+
+group_raw = c.get('group', '')
+cip_raw = c.get('cancel-in-progress', '')
+
+group_norm = strip_expr(group_raw)
+cip_norm = strip_expr(cip_raw)
+canonical_group_norm = ' '.join(canonical_group.split())
+canonical_cip_norm = ' '.join(canonical_cip.split())
+
+assert group_norm == canonical_group_norm, \\
+    f'concurrency.group must match canonical expression exactly, got:\\n{group_norm!r}\\n\\nexpected:\\n{canonical_group_norm!r}'
+assert cip_norm == canonical_cip_norm, \\
+    f'cancel-in-progress must match canonical expression exactly, got:\\n{cip_norm!r}\\n\\nexpected:\\n{canonical_cip_norm!r}'
+
 for job_id, job_cfg in (wf.get('jobs') or {}).items():
     job_cfg = job_cfg or {}
     job_conc = job_cfg.get('concurrency')
