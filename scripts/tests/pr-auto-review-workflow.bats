@@ -58,7 +58,9 @@ cip = c.get('cancel-in-progress', '')
 assert isinstance(cip, str) and \"github.event_name == 'check_suite'\" in cip and \"github.event_name == 'workflow_run'\" in cip, \\
     f'cancel-in-progress must be the canonical event-gated expression, got: {cip!r}'
 for job_id, job_cfg in (wf.get('jobs') or {}).items():
-    assert 'concurrency' not in (job_cfg or {}), f'job {job_id!r} must not add a per-job concurrency block; concurrency is top-level, got: {(job_cfg or {}).get(\"concurrency\")!r}'
+    job_cfg = job_cfg or {}
+    job_conc = job_cfg.get('concurrency')
+    assert 'concurrency' not in job_cfg, f'job {job_id!r} must not add a per-job concurrency block; concurrency is top-level, got: {job_conc!r}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
