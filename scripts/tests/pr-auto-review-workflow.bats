@@ -53,7 +53,7 @@ c = wf.get('concurrency')
 assert isinstance(c, dict), f'pr-auto-review stub must carry a top-level concurrency block synced from canonical, got: {c!r}'
 
 def strip_expr(s):
-    # Strip ${{ ... }} wrapper if present, then normalize whitespace
+    # Strip \${{ ... }} wrapper if present, then normalize whitespace
     s = s.strip()
     if s.startswith('\${{') and s.endswith('}}'):
         s = s[3:-2].strip()
@@ -79,10 +79,12 @@ cip_norm = strip_expr(cip_raw)
 canonical_group_norm = ' '.join(canonical_group.split())
 canonical_cip_norm = ' '.join(canonical_cip.split())
 
-assert group_norm == canonical_group_norm, \\
-    f'concurrency.group must match canonical expression exactly, got:\\n{group_norm!r}\\n\\nexpected:\\n{canonical_group_norm!r}'
-assert cip_norm == canonical_cip_norm, \\
-    f'cancel-in-progress must match canonical expression exactly, got:\\n{cip_norm!r}\\n\\nexpected:\\n{canonical_cip_norm!r}'
+# Assign to variables to avoid line-continuation backslashes in bash
+group_msg = f'concurrency.group must match canonical expression exactly, got:\\n{group_norm!r}\\n\\nexpected:\\n{canonical_group_norm!r}'
+cip_msg = f'cancel-in-progress must match canonical expression exactly, got:\\n{cip_norm!r}\\n\\nexpected:\\n{canonical_cip_norm!r}'
+
+assert group_norm == canonical_group_norm, group_msg
+assert cip_norm == canonical_cip_norm, cip_msg
 
 for job_id, job_cfg in (wf.get('jobs') or {}).items():
     job_cfg = job_cfg or {}
