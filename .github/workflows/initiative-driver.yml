@@ -62,34 +62,19 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  # One lane per repo so a close burst + the schedule does not fan out duplicate
-  # dispatches. cancel-in-progress=true cancels any pending/running redundant dispatches
-  # since the central driver sweeps all epics anyway.
-  group: initiative-driver-dispatch-${{ github.repository }}
-  cancel-in-progress: true
-
 jobs:
-  dispatch:
-    # On a `labeled` event, only dispatch when the added label is the gate label
-    # (mirror the central driver) — otherwise every label change fans out a dispatch.
+  admission:
+    # On a `labeled` event, only run when the added label is the gate label
+    # (mirror the central driver) — otherwise every label change fans out runs.
     if: >-
       github.event_name != 'issues' ||
       github.event.action != 'labeled' ||
       github.event.label.name == 'initiative:auto'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    outputs:
+      decision: ${{ steps.arl_gate.outputs.decision }}
     steps:
-      - name: Guard — PAT present
-        # PAT required: a workflow_dispatch fired with GITHUB_TOKEN never starts a run.
-        env:
-          GH_TOKEN: ${{ secrets.GH_PAT_DON_PETRY || secrets.GH_PAT_WORKFLOWS }}
-        run: |
-          if [ -z "${GH_TOKEN}" ]; then
-            echo "::error::GH_PAT_DON_PETRY (or legacy GH_PAT_WORKFLOWS) is required — a workflow_dispatch fired with GITHUB_TOKEN never starts a run."
-            exit 1
-          fi
-
       - name: Checkout agent-rate-limit gate tooling
         # Phase-4 wiring (#640): the gate library + orchestrator live in
         # petry-projects/.github; an enrolled caller stub does not carry them, so
@@ -111,10 +96,12 @@ jobs:
 
       - name: Agent rate-limit admission gate (enforcing)
         # initiative-driver is the ONE canary agent type that ENFORCES (pure bash,
-        # no model spend, the direct #443 target — AC #5). Reads run history with
-        # the PAT (independent of the `permissions:` block) and emits
-        # decision=allow|defer to $GITHUB_OUTPUT; a defer is honoured by the `if:`
-        # on the dispatch step below. Fail-safe: the step can never fail the job.
+        # no model spend, the direct #443 target — AC #5). Runs in its own job outside
+        # the cancel-in-progress concurrency group to prevent the gate decision from
+        # being cancelled if a new dispatch is triggered. Reads run history with the PAT
+        # (independent of the `permissions:` block) and emits decision=allow|defer to
+        # $GITHUB_OUTPUT; a defer is honoured by the dispatch job's `if:` condition.
+        # Fail-safe: the step can never fail the job.
         continue-on-error: true
         id: arl_gate
         env:
@@ -136,12 +123,36 @@ jobs:
             --tracking-repo "$ARL_TRACKING_REPO" \
             --tracking-issue "$ARL_TRACKING_ISSUE" || true
 
+  dispatch:
+    # The dispatch job depends on admission to ensure the gate decision is made before
+    # attempting to dispatch. Only dispatch if the gate decision is not 'defer'.
+    needs: admission
+    if: needs.admission.outputs.decision != 'defer'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      # One lane per repo so a close burst + the schedule does not fan out duplicate
+      # dispatches. cancel-in-progress=true cancels any pending/running redundant dispatches
+      # since the central driver sweeps all epics anyway. The admission gate runs separately
+      # and cannot be cancelled (#640).
+      group: initiative-driver-dispatch-${{ github.repository }}
+      cancel-in-progress: true
+    steps:
+      - name: Guard — PAT present
+        # PAT required: a workflow_dispatch fired with GITHUB_TOKEN never starts a run.
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT_DON_PETRY || secrets.GH_PAT_WORKFLOWS }}
+        run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::error::GH_PAT_DON_PETRY (or legacy GH_PAT_WORKFLOWS) is required — a workflow_dispatch fired with GITHUB_TOKEN never starts a run."
+            exit 1
+          fi
+
       - name: Dispatch central initiative-driver
         # Skipped (clean no-op) ONLY on an explicit `defer` — never a cancel, never
         # a job failure (#640, AC #1/#2). Fail-OPEN: an empty/missing decision (the
         # gate step or its tooling checkout failed) still dispatches, because an
         # outage of the gate must never stop the fleet (ADR §7 fail-safe direction).
-        if: steps.arl_gate.outputs.decision != 'defer'
         env:
           GH_TOKEN: ${{ secrets.GH_PAT_DON_PETRY || secrets.GH_PAT_WORKFLOWS }}
         run: |
