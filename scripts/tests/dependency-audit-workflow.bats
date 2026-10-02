@@ -50,9 +50,10 @@ print('ok')
 @test "trigger: merge_group is present (merge queue support)" {
   run python3 -c "
 import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1]))
-on = wf.get('on', wf.get(True, {}))
-assert 'merge_group' in on, f'merge_group trigger is required, got: {sorted(on)}'
+wf = yaml.safe_load(open(sys.argv[1])) or {}
+on = wf.get('on') or wf.get(True) or {}
+sorted_on = sorted(on)
+assert 'merge_group' in on, f'merge_group trigger is required, got: {sorted_on}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
@@ -62,10 +63,12 @@ print('ok')
 @test "trigger: on: surface matches canonical stub exactly" {
   run python3 -c "
 import sys, yaml
-wf = yaml.safe_load(open(sys.argv[1]))
-on = wf.get('on', wf.get(True, {}))
+wf = yaml.safe_load(open(sys.argv[1])) or {}
+on = wf.get('on') or wf.get(True) or {}
 expected = {'pull_request', 'push', 'merge_group'}
-assert set(on) == expected, f'on: triggers must be {sorted(expected)}, got: {sorted(on)}'
+sorted_expected = sorted(expected)
+sorted_on = sorted(on)
+assert set(on) == expected, f'on: triggers must be {sorted_expected}, got: {sorted_on}'
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
