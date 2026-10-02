@@ -47,6 +47,31 @@ print('ok')
   [ "$status" -eq 0 ]
 }
 
+@test "trigger: merge_group is present (merge queue support)" {
+  run python3 -c "
+import sys, yaml
+wf = yaml.safe_load(open(sys.argv[1]))
+on = wf.get('on', wf.get(True, {}))
+assert 'merge_group' in on, f'merge_group trigger is required, got: {sorted(on)}'
+print('ok')
+" "$WORKFLOW"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
+@test "trigger: on: surface matches canonical stub exactly" {
+  run python3 -c "
+import sys, yaml
+wf = yaml.safe_load(open(sys.argv[1]))
+on = wf.get('on', wf.get(True, {}))
+expected = {'pull_request', 'push', 'merge_group'}
+assert set(on) == expected, f'on: triggers must be {sorted(expected)}, got: {sorted(on)}'
+print('ok')
+" "$WORKFLOW"
+  [ "$status" -eq 0 ]
+  [[ "$output" == "ok" ]]
+}
+
 @test "uses: reusable pinned line is unchanged" {
   run python3 -c "
 import sys, yaml
