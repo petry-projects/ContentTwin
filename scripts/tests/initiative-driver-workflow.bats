@@ -66,7 +66,9 @@ steps = wf['jobs']['dispatch']['steps']
 d = [s for s in steps if 'gh workflow run' in s.get('run', '')]
 assert len(d) == 1
 assert d[0]['if'] == 'steps.arl_gate.outputs.decision != ' + chr(39) + 'defer' + chr(39), d[0].get('if')
-assert 'petry-projects/.github-private' in d[0]['run']
+assert 'gh workflow run initiative-driver.yml' in d[0]['run']
+assert '-R petry-projects/.github-private' in d[0]['run']
+assert '-f target_repo=' + chr(36) + '{{ github.repository }}' in d[0]['run']
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
