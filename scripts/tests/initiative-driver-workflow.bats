@@ -35,6 +35,7 @@ co = [s for s in steps if s.get('with', {}).get('repository') == 'petry-projects
 assert len(co) == 1
 assert re.fullmatch(r'[0-9a-f]{40}', co[0]['with']['ref']), co[0]['with']['ref']
 assert co[0]['continue-on-error'] is True
+assert co[0]['with']['persist-credentials'] is False
 print('ok')
 " "$WORKFLOW"
   [ "$status" -eq 0 ]
