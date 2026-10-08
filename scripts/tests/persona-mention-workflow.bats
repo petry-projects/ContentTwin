@@ -5,6 +5,7 @@
 WORKFLOW=".github/workflows/persona-mention.yml"
 
 setup() {
+  # Verify PyYAML is installed; required to parse and validate YAML workflow files.
   if ! python3 -c "import yaml" &>/dev/null; then
     echo "Error: Python 'yaml' (PyYAML) module is required to run these tests." >&2
     return 1
