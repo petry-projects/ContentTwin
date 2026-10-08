@@ -4,6 +4,7 @@
 
 WORKFLOW=".github/workflows/agent-shield.yml"
 
+# setup - Verify test environment has required dependencies.
 setup() {
   # Verify PyYAML is installed; required to parse and validate YAML workflow files.
   if ! python3 -c "import yaml" &>/dev/null; then
